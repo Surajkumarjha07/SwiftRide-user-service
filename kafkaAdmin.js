@@ -1,22 +1,28 @@
-import kafka from "./kafkaClient";
+import kafka from "./kafkaClient.js";
 
 async function kafkaInit() {
     const admin = kafka.admin();
     console.log("Admin connecting...");
-    admin.connect();
+    await admin.connect();
     console.log("Admin connected...");
-    
-    await admin.createTopics({
-        topics: [{
-            topic: "user-ride-request",
+
+    const topics = ["ride-requests"];
+    const existingTopics = await admin.listTopics();
+
+    const topicsToCreate = topics.filter(t => !existingTopics.includes(t));
+
+    if (topicsToCreate.length > 0) {
+        await admin.createTopics({
+            topics:
+                topicsToCreate.map((t) => ({ topic: t })),
             numPartitions: 1
-        }]
-    })
+        })
+    }
 
     console.log("Topics created!");
-    
+
     await admin.disconnect();
 }
 
-kafkaInit();
+export default kafkaInit;
 

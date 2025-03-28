@@ -8,7 +8,6 @@ dotenv.config();
 
 async function handleLogIn(req, res) {
     try {
-
         const { email, password } = req.body;
 
         if (!email || !password) {
