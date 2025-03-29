@@ -31,12 +31,12 @@ async function handleLogIn(req, res) {
             return;
         }
 
-        const token = jwt.sign({ email, name: user.name }, process.env.JWT_SECRET, { expiresIn: "1min" })
+        const token = jwt.sign({ email, name: user.name }, process.env.JWT_SECRET, { expiresIn: "1h" })
         res.cookie("authToken", token, {
             httpOnly: true,
             sameSite: 'None',
             secure: true,
-            maxAge: 60 * 1000,
+            maxAge: 60 * 60 * 1000,
             path: "/"
         })
 

@@ -1,7 +1,7 @@
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
-    container_name: zookeeperg
+    container_name: users-zookeeper
     restart: always
     environment:
       - ZOOKEEPER_CLIENT_PORT=2181
@@ -9,11 +9,11 @@ services:
     ports:
       - 2181:2181
     networks:
-      - kafka-net
+      - users-kafka-net
   
   kafka:
     image: confluentinc/cp-kafka:latest
-    container_name: kafka
+    container_name: users-kafka
     restart: always
     depends_on: 
       - zookeeper
@@ -29,21 +29,21 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     networks:
-      - kafka-net
+      - users-kafka-net
   
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     depends_on:
       - kafka
-    container_name: kafka-ui
+    container_name: users-kafka-ui
     ports:
       - "8080:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: user-service-kafka
       KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: kafka:9093
     networks:
-      - kafka-net
+      - users-kafka-net
 
 networks:
-  kafka-net:
+  users-kafka-net:
     driver: bridge
