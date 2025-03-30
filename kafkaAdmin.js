@@ -10,7 +10,7 @@ async function kafkaInit() {
     const existingTopics = await admin.listTopics();
 
     const topicsToCreate = topics.filter(t => !existingTopics.includes(t));
-
+    
     if (topicsToCreate.length > 0) {
         await admin.createTopics({
             topics:

@@ -46,4 +46,4 @@ services:
 
 networks:
   users-kafka-net:
-    driver: bridge
+    external: true
