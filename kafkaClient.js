@@ -2,7 +2,7 @@ import { Kafka, logLevel } from "kafkajs";
 
 const kafka = new Kafka({
     clientId: "user-service",
-    brokers: ["localhost:9092"],
+    brokers: ["kafka:9092"],
     connectionTimeout: 10000,
     requestTimeout: 30000,
     retry: {

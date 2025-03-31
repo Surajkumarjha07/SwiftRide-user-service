@@ -17,7 +17,7 @@ COPY . .
 RUN npx prisma generate
 
 # exposing port to 3000
-EXPOSE 3000
+EXPOSE 4001
 
 # cmd command
 CMD [ "npm", "start" ]

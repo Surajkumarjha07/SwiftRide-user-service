@@ -34,6 +34,6 @@ app.use("/rides", rideRoutes);
     console.log("Producer initialized.");
 })();
 
-app.listen(process.env.PORT, () => {
+app.listen(process.env.PORT, "0.0.0.0", () => {
     console.log("User service is running!");
 })
