@@ -2,8 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import userRoutes from "./routes/userRoutes.js";
-import kafkaInit from "./kafkaAdmin.js";
-import producer from "./producer.js";
+import kafkaInit from "./kafka/kafkaAdmin.js";
+import producer from "./kafka/producer.js";
 import rideRoutes from "./routes/rideRoutes.js";
 
 dotenv.config();

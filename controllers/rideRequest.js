@@ -1,4 +1,4 @@
-import producer from "../producer.js"
+import producer from "../kafka/producer.js"
 
 async function handleRideRequest(req, res) {
     try {
