@@ -6,7 +6,8 @@ const prisma = new PrismaClient();
 async function handleSignUp(req, res) {
     try {
         const { email, name, password, role } = req.body;
-        if (!email || !name || !password) {
+        
+        if (!email || !name || !password || !role) {
             res.status(400).json({
                 message: "Enter required details!"
             });
