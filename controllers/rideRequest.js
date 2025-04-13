@@ -17,7 +17,15 @@ async function handleRideRequest(req, res) {
             })
         }
 
-        await producer.sendProducerMessage("ride-request", { name, location, destination });
+        const alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklomnopqrstuvwxyz_-@#$&";
+        let rideId = '';
+
+        for (let i = 0; i < 30; i++) {
+            let pos = Math.floor(Math.random() * alpha.length)
+            rideId = rideId + alpha[pos];
+        }        
+
+        await producer.sendProducerMessage("ride-request", { rideId, name, location, destination });
         res.status(200).json({
             message: "ride request sent successfully!"
         })
