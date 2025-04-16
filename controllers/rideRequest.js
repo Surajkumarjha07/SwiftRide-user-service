@@ -25,7 +25,7 @@ async function handleRideRequest(req, res) {
             rideId = rideId + alpha[pos];
         }        
 
-        await producer.sendProducerMessage("ride-request", { rideId, name, location, destination });
+        await producer.sendProducerMessage("ride-request", { rideId, userName: name, pickUpLocation: location, destination, price: 200 });
         res.status(200).json({
             message: "ride request sent successfully!"
         })
