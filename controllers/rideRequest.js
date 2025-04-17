@@ -3,7 +3,7 @@ import producer from "../kafka/producer.js"
 async function handleRideRequest(req, res) {
     try {
         const { location, destination } = req.body;
-        const { name } = req.user;
+        const { id } = req.user;
 
         if (!name) {
             res.status(404).json({
@@ -25,7 +25,7 @@ async function handleRideRequest(req, res) {
             rideId = rideId + alpha[pos];
         }        
 
-        await producer.sendProducerMessage("ride-request", { rideId, userName: name, pickUpLocation: location, destination, price: 200 });
+        await producer.sendProducerMessage("ride-request", { rideId, userId: id, pickUpLocation: location, destination, price: 200 });
         res.status(200).json({
             message: "ride request sent successfully!"
         })

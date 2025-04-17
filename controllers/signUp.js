@@ -22,11 +22,19 @@ async function handleSignUp(req, res) {
             })
         }
 
+        const alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklomnopqrstuvwxyz_-@#$&";
+        let userId = '';
+
+        for (let i = 0; i < 15; i++) {
+            let pos = Math.floor(Math.random() * alpha.length)
+            userId = userId + alpha[pos];
+        }
+
         const saltRounds = 10;
         const salt = await bcrypt.genSalt(saltRounds);
         const hashedPassword = await bcrypt.hash(password, salt)
 
-        const user = await prisma.users.create({ data: { email, name, password: hashedPassword, role } });
+        const user = await prisma.users.create({ data: { email, name, password: hashedPassword, role, userId } });
 
         res.status(200).json({
             message: "User created!",
