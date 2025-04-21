@@ -5,16 +5,18 @@ async function handleRideRequest(req, res) {
         const { location, destination } = req.body;
         const { id } = req.user;
 
-        if (!name) {
+        if (!id) {
             res.status(404).json({
                 message: "user not defined!"
-            })
+            });
+            return;
         }
 
         if (!location || !destination) {
             res.status(400).json({
                 message: "location and destination are required!"
-            })
+            });
+            return;
         }
 
         const alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklomnopqrstuvwxyz_-@#$&";
