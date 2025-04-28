@@ -1,9 +1,9 @@
 import express from "express";
-import handleSignUp from "../controllers/signUp.js";
-import handleLogIn from "../controllers/logIn.js";
-import handleUpdateUserInfo from "../controllers/update.js";
+import handleSignUp from "../controllers/users/signUp.js";
+import handleLogIn from "../controllers/users/logIn.js";
+import handleUpdateUserInfo from "../controllers/users/update.js";
 import authenticate from "../middlewares/userAuth.js";
-import handleDeleteUser from "../controllers/delete.js";
+import handleDeleteUser from "../controllers/users/delete.js";
 
 const router = express.Router();
 

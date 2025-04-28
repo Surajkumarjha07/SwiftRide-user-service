@@ -1,7 +1,7 @@
 import { Router } from "express";
-import handleRideRequest from "../controllers/rideRequest.js";
+import handleRideRequest from "../controllers/rides/rideRequest.js";
 import authenticate from "../middlewares/userAuth.js";
-import handleRideCancellation from "../controllers/rideCancellation.js";
+import handleRideCancellation from "../controllers/rides/rideCancellation.js";
 
 const router = Router();
 

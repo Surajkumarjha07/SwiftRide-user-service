@@ -1,3 +1,4 @@
+import { rideService } from "../../services/rideService.js";
 
 async function handleRideCancellation(req, res) {
     try {
@@ -7,6 +8,12 @@ async function handleRideCancellation(req, res) {
                 message: "token inavalid!"
             })
         }
+
+        await rideService.rideCancel({});
+
+        res.status(200).json({
+            message: "ride cancellation successfull!"
+        })
 
     } catch (error) {
         console.log("error in ride cancellation!");        

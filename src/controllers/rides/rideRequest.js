@@ -1,4 +1,4 @@
-import producer from "../kafka/producer.js"
+import { rideService } from "../../services/rideService.js";
 
 async function handleRideRequest(req, res) {
     try {
@@ -19,15 +19,8 @@ async function handleRideRequest(req, res) {
             return;
         }
 
-        const alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklomnopqrstuvwxyz_-@#$&";
-        let rideId = '';
+        await rideService.rideRequest({ id, location, destination });
 
-        for (let i = 0; i < 30; i++) {
-            let pos = Math.floor(Math.random() * alpha.length)
-            rideId = rideId + alpha[pos];
-        }        
-
-        await producer.sendProducerMessage("ride-request", { rideId, userId: id, pickUpLocation: location, destination, price: 200 });
         res.status(200).json({
             message: "ride request sent successfully!"
         })

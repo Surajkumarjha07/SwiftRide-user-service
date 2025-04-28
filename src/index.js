@@ -2,9 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import userRoutes from "./routes/userRoutes.js";
-import kafkaInit from "./kafka/kafkaAdmin.js";
-import producer from "./kafka/producer.js";
 import rideRoutes from "./routes/rideRoutes.js";
+import startKafka from "./kafka/index.js";
 
 dotenv.config();
 
@@ -22,17 +21,7 @@ app.use("/actions", userRoutes);
 app.use("/rides", rideRoutes);
 
 //kafka handling
-(async () => {
-    console.log("Initializing Kafka...");
-    await kafkaInit();
-    console.log("Kafka initialization done.");
-})();
-
-(async () => {
-    console.log("Initializing Producer...");
-    await producer.producerInit();
-    console.log("Producer initialized.");
-})();
+startKafka();
 
 app.listen(process.env.PORT, "0.0.0.0", () => {
     console.log("User service is running!");
