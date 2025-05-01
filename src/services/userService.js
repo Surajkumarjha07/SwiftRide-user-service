@@ -1,9 +1,8 @@
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import prisma from "../prisma/prismaClient.js";
 
-const prisma = new PrismaClient();
 dotenv.config();
 
 async function signUpUser({ email, name, password, role }) {

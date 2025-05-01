@@ -1,6 +1,6 @@
 import { consumerInit } from "./consumerInIt.js";
 import kafkaInit from "./kafkaAdmin.js";
-import producerInit from "./producerInIt.js";
+import { producerInit } from "./producerInIt.js";
 
 async function startKafka() {
     (async () => {

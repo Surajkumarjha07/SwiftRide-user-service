@@ -1,6 +1,6 @@
-import producer from "../kafka/producerInIt.js";
+import { producer } from "../kafka/producerInIt.js";
 
-async function rideRequest({ id, location, destination}) {
+async function rideRequest({ id, location, destination }) {
     try {
         const alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklomnopqrstuvwxyz_-@#$&";
         let rideId = '';
