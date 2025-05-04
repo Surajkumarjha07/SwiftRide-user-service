@@ -1,4 +1,4 @@
-import { producer } from "../kafka/producerInIt.js";
+import sendProducerMessage from "../kafka/producers/producerTemplate.js";
 
 async function rideRequest({ id, location, destination }) {
     try {
@@ -10,7 +10,7 @@ async function rideRequest({ id, location, destination }) {
             rideId = rideId + alpha[pos];
         }
 
-        await producer.sendProducerMessage("ride-request", { rideId, userId: id, pickUpLocation: location, destination, price: 200 });
+        await sendProducerMessage("ride-request", { rideId, userId: id, pickUpLocation: location, destination, price: 200 });
     } catch (error) {
         console.log("Ride request error: ", error.message);
     }
