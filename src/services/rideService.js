@@ -18,7 +18,7 @@ async function rideRequest({ id, location, destination }) {
 
 async function rideCancel({ }) {
     try {
-
+        
     } catch (error) {
         console.log("Ride cancel service error: ", error.message);
     }
