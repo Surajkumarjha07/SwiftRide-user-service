@@ -1,4 +1,5 @@
 import sendProducerMessage from "../kafka/producers/producerTemplate.js";
+import redisClient from "../redis/redisClient.js";
 
 async function rideRequest({ id, location, destination }) {
     try {
@@ -10,14 +11,21 @@ async function rideRequest({ id, location, destination }) {
             rideId = rideId + alpha[pos];
         }
 
+        // kafka message
         await sendProducerMessage("ride-request", { rideId, userId: id, pickUpLocation: location, destination, price: 200 });
+        
+        // redis cache
+        await redisClient.hmset(`userRide:${id}`, { rideId, userId: id, pickUpLocation: location, destination, price: 200 });
+
     } catch (error) {
         console.log("Ride request error: ", error.message);
     }
 }
 
-async function rideCancel({ }) {
+async function rideCancel(id) {
     try {
+        const rideCancelData = await redisClient.hgetall(`userRide:${id}`);
+        console.log("rideCancelData: ", rideCancelData);
         
     } catch (error) {
         console.log("Ride cancel service error: ", error.message);

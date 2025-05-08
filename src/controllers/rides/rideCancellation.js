@@ -9,7 +9,7 @@ async function handleRideCancellation(req, res) {
             })
         }
 
-        await rideService.rideCancel({});
+        await rideService.rideCancel(id);
 
         res.status(200).json({
             message: "ride cancellation successfull!"

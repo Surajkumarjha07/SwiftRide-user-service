@@ -20,4 +20,10 @@ model users {
   name String
   password String
   role String
+  in_ride isInRide @default(NOT_IN_RIDE)
+}
+
+enum isInRide {
+  IN_RIDE
+  NOT_IN_RIDE
 }
