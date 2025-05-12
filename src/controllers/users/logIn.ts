@@ -1,6 +1,7 @@
-import { userService } from "../../services/userService.js";
+import { Request, Response } from "express";
+import { userService } from "../../services/userServices/index.js";
 
-async function handleLogIn(req, res) {
+async function handleLogIn(req: Request, res: Response) {
     try {
         const { email, password } = req.body;
 
@@ -13,9 +14,9 @@ async function handleLogIn(req, res) {
 
         const token = await userService.logInUser({ email, password });
 
-        res.cookie("authToken", token, {
+        res.cookie("authToken", token!, {
             httpOnly: true,
-            sameSite: 'None',
+            sameSite: 'none',
             secure: true,
             maxAge: 60 * 60 * 1000,
             path: "/"
@@ -27,9 +28,12 @@ async function handleLogIn(req, res) {
         })
 
     } catch (error) {
-        return res.status(400).json({
-            message: error.message || "Internal server error!"
-        })
+        if (error instanceof Error) {
+            res.status(400).json({
+                message: error.message || "Internal server error!"
+            });
+            return;
+        }
     }
 }
 

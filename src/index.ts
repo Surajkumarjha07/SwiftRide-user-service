@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import userRoutes from "./routes/userRoutes.js";
@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-app.get("/", (req, res) => {
+app.get("/", (req: Request, res: Response) => {
     res.send("Hello! Suraj, I am user-service");
 })
 
@@ -23,6 +23,6 @@ app.use("/rides", rideRoutes);
 //kafka handling
 startKafka();
 
-app.listen(process.env.PORT, "0.0.0.0", () => {
+app.listen(Number(process.env.PORT), "0.0.0.0", () => {
     console.log("User service is running!");
 })

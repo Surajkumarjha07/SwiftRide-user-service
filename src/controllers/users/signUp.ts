@@ -1,6 +1,7 @@
-import { userService } from "../../services/userService.js";
+import { Request, Response } from "express";
+import { userService } from "../../services/userServices/index.js";
 
-async function handleSignUp(req, res) {
+async function handleSignUp(req: Request, res: Response) {
     const { email, name, password, role } = req.body;
 
     if (!email || !name || !password || !role) {
@@ -19,9 +20,12 @@ async function handleSignUp(req, res) {
         })
 
     } catch (error) {
-        return res.status(400).json({
-            message: error.message || "Internal server error!"
-        })
+        if (error instanceof Error) {
+            res.status(400).json({
+                message: error.message || "Internal server error!"
+            });
+            return;
+        }
     }
 }
 

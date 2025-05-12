@@ -1,9 +1,11 @@
-import { rideService } from "../../services/rideService.js";
+import { Request, Response } from "express";
+import UserPayload from "../../types/userPayloads.js";
+import { rideService } from "../../services/rideServices/index.js";
 
-async function handleRideRequest(req, res) {
+async function handleRideRequest(req: Request, res: Response) {
     try {
         const { location, destination } = req.body;
-        const { id } = req.user;
+        const { id } = req.user as UserPayload;
 
         if (!id) {
             res.status(404).json({
