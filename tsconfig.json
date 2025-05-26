@@ -112,7 +112,7 @@
   },
   "include": [
     "src"
-  ],
+, "../captain-service/src/types/fareTypes.ts"  ],
   "exclude": [
     "node_modules"
   ]

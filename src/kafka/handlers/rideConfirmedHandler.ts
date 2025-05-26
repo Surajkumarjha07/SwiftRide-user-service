@@ -4,14 +4,17 @@ import { isInRide } from "@prisma/client";
 
 async function rideConfirmedHandler({ message }: EachMessagePayload) {
     try {
-        const { id, rideData } = JSON.parse(message.value!.toString());
-
+        const { captainId, rideData } = JSON.parse(message.value!.toString());
+        const { userId } = rideData;
+        
         await prisma.users.update({
-            where: { userId: id },
+            where: { userId: userId },
             data: {
                 in_ride: isInRide.IN_RIDE
             }
         });
+
+        console.log(`ride confirmed by ${captainId} for ${rideData.rideId}`);
 
         // later we use some emitter to notify user for mobile interactivity
 

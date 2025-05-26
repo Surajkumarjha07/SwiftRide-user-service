@@ -16,7 +16,7 @@ async function logInUser({ email, password }: logInType) {
             throw new Error("Incorrect email or password!");
         }
 
-        const token = jwt.sign({ email, name: user.name, id: user.userId }, process.env.JWT_SECRET!, { expiresIn: "1h" })
+        const token = jwt.sign({ userEmail: email, userName: user.name, userId: user.userId }, process.env.JWT_SECRET!, { expiresIn: "1h" })
         return token;
     } catch (error) {
         if (error instanceof Error) {

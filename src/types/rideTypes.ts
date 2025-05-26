@@ -1,5 +1,5 @@
 export type rideRequestType = {
-    id: string,
-    location: string,
-    destination: string
+    userId: string,
+    locationCoordinates: string,
+    destinationCoordinates: string
 }

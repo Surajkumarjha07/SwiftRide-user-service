@@ -47,7 +47,7 @@ async function logInUser({ email, password }) {
     if (!user || !passwordMatched) {
       throw new Error("Incorrect email or password!");
     }
-    const token = jwt.sign({ email, name: user.name, id: user.userId }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign({ userEmail: email, userName: user.name, userId: user.userId }, process.env.JWT_SECRET, { expiresIn: "1h" });
     return token;
   } catch (error) {
     if (error instanceof Error) {
@@ -256,13 +256,8 @@ var userRoutes_default = router;
 // src/routes/rideRoutes.ts
 import { Router } from "express";
 
-// src/services/rideServices/rideCancelService.ts
+// src/services/rideServices/confirmRideService.ts
 import { isInRide } from "@prisma/client";
-
-// src/redis/redisClient.ts
-import { Redis } from "ioredis";
-var redisClient = new Redis();
-var redisClient_default = redisClient;
 
 // src/kafka/producerInIt.ts
 import { Partitioners } from "kafkajs";
@@ -303,17 +298,46 @@ async function sendProducerMessage(topic, value) {
 }
 var producerTemplate_default = sendProducerMessage;
 
-// src/services/rideServices/rideCancelService.ts
-async function rideCancel(id) {
+// src/redis/redisClient.ts
+import { Redis } from "ioredis";
+var redisClient = new Redis();
+var redisClient_default = redisClient;
+
+// src/services/rideServices/confirmRideService.ts
+async function confirmRide(userId) {
   try {
-    const rideData = await redisClient_default.hgetall(`userRide:${id}`);
-    await prismaClient_default.users.updateMany({
-      where: { userId: id, in_ride: isInRide.IN_RIDE },
+    await prismaClient_default.users.update({
+      where: {
+        userId
+      },
       data: {
-        in_ride: isInRide.NOT_IN_RIDE
+        in_ride: isInRide.IN_RIDE
+      }
+    });
+    const rideData = await redisClient_default.hgetall(`rideData:${userId}`);
+    console.log("rideData: " + Object.entries(rideData));
+    await producerTemplate_default("ride-request", rideData);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.log("Ride request error: ", error.message);
+    }
+  }
+}
+var confirmRideService_default = confirmRide;
+
+// src/services/rideServices/rideCancelService.ts
+import { isInRide as isInRide2 } from "@prisma/client";
+async function rideCancel(userId) {
+  try {
+    const rideData = await redisClient_default.hgetall(`rideData:${userId}`);
+    await prismaClient_default.users.updateMany({
+      where: { userId, in_ride: isInRide2.IN_RIDE },
+      data: {
+        in_ride: isInRide2.NOT_IN_RIDE
       }
     });
     await producerTemplate_default("ride-cancelled", rideData);
+    await redisClient_default.del(`rideData:${userId}`);
   } catch (error) {
     if (error instanceof Error) {
       console.log("Ride cancel service error: ", error.message);
@@ -323,54 +347,38 @@ async function rideCancel(id) {
 var rideCancelService_default = rideCancel;
 
 // src/services/rideServices/rideRequestService.ts
-import { isInRide as isInRide2 } from "@prisma/client";
-async function rideRequest({ id, location, destination }) {
+async function rideRequest({ userId, locationCoordinates, destinationCoordinates }) {
   try {
-    const alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklomnopqrstuvwxyz_-@#$&";
-    let rideId = "";
-    for (let i = 0; i < 30; i++) {
-      let pos = Math.floor(Math.random() * alpha.length);
-      rideId = rideId + alpha[pos];
-    }
-    await prismaClient_default.users.update({
-      where: {
-        userId: id
-      },
-      data: {
-        in_ride: isInRide2.IN_RIDE
-      }
-    });
-    await producerTemplate_default("ride-request", { rideId, userId: id, pickUpLocation: location, destination, price: 200 });
-    await redisClient_default.hmset(`userRide:${id}`, { rideId, userId: id, pickUpLocation: location, destination, price: 200 });
+    await producerTemplate_default("calculate-fare", { userId, locationCoordinates, destinationCoordinates });
   } catch (error) {
     if (error instanceof Error) {
-      console.log("Ride request error: ", error.message);
+      throw new Error(`Error in confirm-ride service: ${error.message}`);
     }
   }
 }
 var rideRequestService_default = rideRequest;
 
 // src/services/rideServices/index.ts
-var rideService = { rideRequest: rideRequestService_default, rideCancel: rideCancelService_default };
+var rideService = { rideRequest: rideRequestService_default, rideCancel: rideCancelService_default, confirmRide: confirmRideService_default };
 
 // src/controllers/rides/rideRequest.ts
 async function handleRideRequest(req, res) {
   try {
-    const { location, destination } = req.body;
-    const { id } = req.user;
-    if (!id) {
+    const { locationCoordinates, destinationCoordinates } = req.body;
+    const { userId } = req.user;
+    if (!userId) {
       res.status(404).json({
         message: "user not defined!"
       });
       return;
     }
-    if (!location || !destination) {
+    if (!locationCoordinates || !destinationCoordinates) {
       res.status(400).json({
-        message: "location and destination are required!"
+        message: "locationCoordinates and destinationCoordinates are required!"
       });
       return;
     }
-    await rideService.rideRequest({ id, location, destination });
+    await rideService.rideRequest({ userId, locationCoordinates, destinationCoordinates });
     res.status(200).json({
       message: "ride request sent successfully!"
     });
@@ -386,14 +394,14 @@ var rideRequest_default = handleRideRequest;
 // src/controllers/rides/rideCancellation.ts
 async function handleRideCancellation(req, res) {
   try {
-    const { id } = req.user;
-    if (!id) {
+    const { userId } = req.user;
+    if (!userId) {
       res.status(400).json({
         message: "token inavalid!"
       });
       return;
     }
-    await rideService.rideCancel(id);
+    await rideService.rideCancel(userId);
     res.status(200).json({
       message: "ride cancellation successfull!"
     });
@@ -403,31 +411,124 @@ async function handleRideCancellation(req, res) {
 }
 var rideCancellation_default = handleRideCancellation;
 
+// src/controllers/rides/confirmRide.ts
+async function handleConfirmRide(req, res) {
+  try {
+    const { userId } = req.user;
+    if (!userId) throw new Error("user not authorized!");
+    await rideService.confirmRide(userId);
+    res.status(200).json({
+      message: "ride confirmation request sent successfully!"
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Error in confirming ride: ${error.message}`);
+    }
+  }
+}
+var confirmRide_default = handleConfirmRide;
+
 // src/routes/rideRoutes.ts
 var router2 = Router();
 router2.post("/ride-request", userAuth_default, rideRequest_default);
 router2.post("/cancel-ride", userAuth_default, rideCancellation_default);
+router2.post("/confirm-ride", userAuth_default, confirmRide_default);
 var rideRoutes_default = router2;
 
 // src/kafka/consumerInIt.ts
 var ride_confirmed_consumer = kafkaClient_default.consumer({ groupId: "ride-confirmed-group" });
+var ride_fare_consumer = kafkaClient_default.consumer({ groupId: "fetched-fare-group" });
+var ride_completed_consumer = kafkaClient_default.consumer({ groupId: "ride_completed_notify_group" });
 async function consumerInit() {
   await Promise.all([
-    ride_confirmed_consumer.connect()
+    ride_confirmed_consumer.connect(),
+    ride_fare_consumer.connect(),
+    ride_completed_consumer.connect()
   ]);
 }
 
-// src/kafka/handlers/rideConfirmedHandler.ts
+// src/kafka/handlers/fareFetchedHandler.ts
+async function fareFetchedHandler({ message }) {
+  try {
+    const { rideId, userId, pickUpLocation, destination, locationCoordinates, destinationCoordinates, fare } = JSON.parse(message.value.toString());
+    await redisClient_default.hmset(`rideData:${userId}`, {
+      rideId,
+      userId,
+      pickUpLocation,
+      destination,
+      pickUpLocation_latitude: locationCoordinates.latitude,
+      pickUpLocation_longitude: locationCoordinates.longitude,
+      destination_latitude: destinationCoordinates.latitude,
+      destination_longitude: destinationCoordinates.longitude,
+      fare
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Error in fare fetching handler: ${error.message}`);
+    }
+  }
+}
+var fareFetchedHandler_default = fareFetchedHandler;
+
+// src/kafka/consumers/fareFetched.ts
+async function fareFetched() {
+  try {
+    await ride_fare_consumer.subscribe({ topic: "fare-fetched", fromBeginning: true });
+    await ride_fare_consumer.run({
+      eachMessage: fareFetchedHandler_default
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Error in getting ride-fare! ${error.message}`);
+    }
+  }
+}
+var fareFetched_default = fareFetched;
+
+// src/kafka/handlers/rideCompletedHandler.ts
 import { isInRide as isInRide3 } from "@prisma/client";
+async function rideCompletedHandler({ message }) {
+  const { captainId, rideData } = JSON.parse(message.value.toString());
+  const { userId } = rideData;
+  await prismaClient_default.users.update({
+    where: { userId },
+    data: {
+      in_ride: isInRide3.NOT_IN_RIDE
+    }
+  });
+  console.log(`${captainId} completed ${rideData.rideId}`);
+  await redisClient_default.del(`rideData:${userId}`);
+}
+var rideCompletedHandler_default = rideCompletedHandler;
+
+// src/kafka/consumers/rideCompletedConsumer.ts
+async function rideCompleted() {
+  try {
+    await ride_completed_consumer.subscribe({ topic: "ride-completed-notify-user", fromBeginning: true });
+    await ride_completed_consumer.run({
+      eachMessage: rideCompletedHandler_default
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Error in getting ride-completed notification: ` + error.message);
+    }
+  }
+}
+var rideCompletedConsumer_default = rideCompleted;
+
+// src/kafka/handlers/rideConfirmedHandler.ts
+import { isInRide as isInRide4 } from "@prisma/client";
 async function rideConfirmedHandler({ message }) {
   try {
-    const { id, rideData } = JSON.parse(message.value.toString());
+    const { captainId, rideData } = JSON.parse(message.value.toString());
+    const { userId } = rideData;
     await prismaClient_default.users.update({
-      where: { userId: id },
+      where: { userId },
       data: {
-        in_ride: isInRide3.IN_RIDE
+        in_ride: isInRide4.IN_RIDE
       }
     });
+    console.log(`ride confirmed by ${captainId} for ${rideData.rideId}`);
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`Error in ride-confirm handler ${error.message}`);
@@ -488,6 +589,8 @@ async function startKafka() {
     console.log("Producer initialized.");
   })();
   await rideConfirmedConsumer_default();
+  await fareFetched_default();
+  await rideCompletedConsumer_default();
 }
 var kafka_default = startKafka;
 

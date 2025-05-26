@@ -4,24 +4,24 @@ import { rideService } from "../../services/rideServices/index.js";
 
 async function handleRideRequest(req: Request, res: Response) {
     try {
-        const { location, destination } = req.body;
-        const { id } = req.user as UserPayload;
+        const { locationCoordinates, destinationCoordinates } = req.body;
+        const { userId } = req.user as UserPayload;
 
-        if (!id) {
+        if (!userId) {
             res.status(404).json({
                 message: "user not defined!"
             });
             return;
         }
 
-        if (!location || !destination) {
+        if (!locationCoordinates || !destinationCoordinates) {
             res.status(400).json({
-                message: "location and destination are required!"
+                message: "locationCoordinates and destinationCoordinates are required!"
             });
             return;
         }
 
-        await rideService.rideRequest({ id, location, destination });
+        await rideService.rideRequest({ userId, locationCoordinates, destinationCoordinates });
 
         res.status(200).json({
             message: "ride request sent successfully!"
