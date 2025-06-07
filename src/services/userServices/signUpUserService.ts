@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
-import prisma from "../../prisma/prismaClient.js";
+import prisma from "../../config/database.js";
 import { signUpType } from "../../types/userTypes.js";
 
 dotenv.config();

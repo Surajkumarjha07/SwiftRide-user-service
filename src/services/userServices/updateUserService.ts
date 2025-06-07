@@ -1,4 +1,4 @@
-import prisma from "../../prisma/prismaClient.js";
+import prisma from "../../config/database.js";
 import { updateType } from "../../types/userTypes.js";
 import bcrypt from "bcrypt";
 

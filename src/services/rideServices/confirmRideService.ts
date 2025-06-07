@@ -1,7 +1,7 @@
 import { isInRide } from "@prisma/client";
 import sendProducerMessage from "../../kafka/producers/producerTemplate.js";
-import prisma from "../../prisma/prismaClient.js";
-import redisClient from "../../redis/redisClient.js";
+import prisma from "../../config/database.js";
+import redis from "../../config/redis.js";
 
 async function confirmRide(userId: string) {
     try {
@@ -16,8 +16,7 @@ async function confirmRide(userId: string) {
         })
 
         // redis cached data
-        const rideData = await redisClient.hgetall(`rideData:${userId}`);
-        console.log("rideData: " + Object.entries(rideData));
+        const rideData = await redis.hgetall(`rideData:${userId}`);
 
         // kafka message
         await sendProducerMessage("ride-request", rideData);

@@ -6,16 +6,16 @@ import cookieParser from "cookie-parser";
 // src/routes/userRoutes.ts
 import express from "express";
 
-// src/prisma/prismaClient.ts
+// src/config/database.ts
 import { PrismaClient } from "@prisma/client";
 var prisma = new PrismaClient();
-var prismaClient_default = prisma;
+var database_default = prisma;
 
 // src/services/userServices/deleteUserService.ts
 import bcrypt from "bcrypt";
 async function deleteUser({ email, password }) {
   try {
-    const user = await prismaClient_default.users.findFirst({ where: { email } });
+    const user = await database_default.users.findFirst({ where: { email } });
     let passwordMatched;
     if (user) {
       passwordMatched = await bcrypt.compare(password, user.password);
@@ -23,7 +23,7 @@ async function deleteUser({ email, password }) {
     if (!user || !passwordMatched) {
       throw new Error("Incorrect email or password!");
     }
-    const deletedUser = await prismaClient_default.users.delete({ where: { email } });
+    const deletedUser = await database_default.users.delete({ where: { email } });
     return deletedUser;
   } catch (error) {
     if (error instanceof Error) {
@@ -39,7 +39,7 @@ import bcrypt2 from "bcrypt";
 import jwt from "jsonwebtoken";
 async function logInUser({ email, password }) {
   try {
-    const user = await prismaClient_default.users.findFirst({ where: { email } });
+    const user = await database_default.users.findFirst({ where: { email } });
     let passwordMatched;
     if (user) {
       passwordMatched = await bcrypt2.compare(password, user.password);
@@ -64,7 +64,7 @@ import dotenv from "dotenv";
 dotenv.config();
 async function signUpUser({ email, name, password, role }) {
   try {
-    const existingUser = await prismaClient_default.users.findFirst({ where: { email } });
+    const existingUser = await database_default.users.findFirst({ where: { email } });
     if (existingUser) {
       throw new Error("Email already exists!");
     }
@@ -77,7 +77,7 @@ async function signUpUser({ email, name, password, role }) {
     const saltRounds = 10;
     const salt = await bcrypt3.genSalt(saltRounds);
     const hashedPassword = await bcrypt3.hash(password, salt);
-    const user = await prismaClient_default.users.create({ data: { email, name, password: hashedPassword, role, userId } });
+    const user = await database_default.users.create({ data: { email, name, password: hashedPassword, role, userId } });
     return user;
   } catch (error) {
     if (error instanceof Error) {
@@ -92,7 +92,7 @@ var signUpUserService_default = signUpUser;
 import bcrypt4 from "bcrypt";
 async function updateUser({ newEmail, newName, newPassword, newRole, oldPassword, email }) {
   try {
-    const user = await prismaClient_default.users.findFirst({
+    const user = await database_default.users.findFirst({
       where: { email }
     });
     let passwordMatched;
@@ -105,7 +105,7 @@ async function updateUser({ newEmail, newName, newPassword, newRole, oldPassword
     const saltRounds = 10;
     const salt = await bcrypt4.genSalt(saltRounds);
     const hashedPassword = await bcrypt4.hash(newPassword, salt);
-    const updatedUser = await prismaClient_default.users.update({
+    const updatedUser = await database_default.users.update({
       where: { email },
       data: { email: newEmail, name: newName, password: hashedPassword, role: newRole }
     });
@@ -298,15 +298,15 @@ async function sendProducerMessage(topic, value) {
 }
 var producerTemplate_default = sendProducerMessage;
 
-// src/redis/redisClient.ts
+// src/config/redis.ts
 import { Redis } from "ioredis";
-var redisClient = new Redis();
-var redisClient_default = redisClient;
+var redis = new Redis();
+var redis_default = redis;
 
 // src/services/rideServices/confirmRideService.ts
 async function confirmRide(userId) {
   try {
-    await prismaClient_default.users.update({
+    await database_default.users.update({
       where: {
         userId
       },
@@ -314,8 +314,7 @@ async function confirmRide(userId) {
         in_ride: isInRide.IN_RIDE
       }
     });
-    const rideData = await redisClient_default.hgetall(`rideData:${userId}`);
-    console.log("rideData: " + Object.entries(rideData));
+    const rideData = await redis_default.hgetall(`rideData:${userId}`);
     await producerTemplate_default("ride-request", rideData);
   } catch (error) {
     if (error instanceof Error) {
@@ -329,15 +328,15 @@ var confirmRideService_default = confirmRide;
 import { isInRide as isInRide2 } from "@prisma/client";
 async function rideCancel(userId) {
   try {
-    const rideData = await redisClient_default.hgetall(`rideData:${userId}`);
-    await prismaClient_default.users.updateMany({
+    const rideData = await redis_default.hgetall(`rideData:${userId}`);
+    await database_default.users.updateMany({
       where: { userId, in_ride: isInRide2.IN_RIDE },
       data: {
         in_ride: isInRide2.NOT_IN_RIDE
       }
     });
     await producerTemplate_default("ride-cancelled", rideData);
-    await redisClient_default.del(`rideData:${userId}`);
+    await redis_default.del(`rideData:${userId}`);
   } catch (error) {
     if (error instanceof Error) {
       console.log("Ride cancel service error: ", error.message);
@@ -428,22 +427,39 @@ async function handleConfirmRide(req, res) {
 }
 var confirmRide_default = handleConfirmRide;
 
+// src/controllers/rides/payment.ts
+async function handlePaymentDone(req, res) {
+  try {
+    const { userId } = req.user;
+    const { rideId, captainId, fare } = req.body;
+    await producerTemplate_default("payment-done", { userId, captainId, rideId, fare });
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Error in payment controller: ${error.message}`);
+    }
+  }
+}
+var payment_default = handlePaymentDone;
+
 // src/routes/rideRoutes.ts
 var router2 = Router();
 router2.post("/ride-request", userAuth_default, rideRequest_default);
 router2.post("/cancel-ride", userAuth_default, rideCancellation_default);
 router2.post("/confirm-ride", userAuth_default, confirmRide_default);
+router2.post("/payment", userAuth_default, payment_default);
 var rideRoutes_default = router2;
 
 // src/kafka/consumerInIt.ts
 var ride_confirmed_consumer = kafkaClient_default.consumer({ groupId: "ride-confirmed-group" });
 var ride_fare_consumer = kafkaClient_default.consumer({ groupId: "fetched-fare-group" });
 var ride_completed_consumer = kafkaClient_default.consumer({ groupId: "ride_completed_notify_group" });
+var payment_requested_consumer = kafkaClient_default.consumer({ groupId: "payment_requested_group" });
 async function consumerInit() {
   await Promise.all([
     ride_confirmed_consumer.connect(),
     ride_fare_consumer.connect(),
-    ride_completed_consumer.connect()
+    ride_completed_consumer.connect(),
+    payment_requested_consumer.connect()
   ]);
 }
 
@@ -451,7 +467,7 @@ async function consumerInit() {
 async function fareFetchedHandler({ message }) {
   try {
     const { rideId, userId, pickUpLocation, destination, locationCoordinates, destinationCoordinates, fare } = JSON.parse(message.value.toString());
-    await redisClient_default.hmset(`rideData:${userId}`, {
+    await redis_default.hmset(`rideData:${userId}`, {
       rideId,
       userId,
       pickUpLocation,
@@ -485,19 +501,48 @@ async function fareFetched() {
 }
 var fareFetched_default = fareFetched;
 
+// src/kafka/handlers/paymentRequestedHandler.ts
+async function handlePaymentRequested({ message }) {
+  try {
+    const { rideData, captainId } = JSON.parse(message.value.toString());
+    console.log("payment data: " + rideData);
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Error in payment-requested handler: ${error.message}`);
+    }
+  }
+}
+var paymentRequestedHandler_default = handlePaymentRequested;
+
+// src/kafka/consumers/paymentRequestedConsumer.ts
+async function paymentRequested() {
+  try {
+    await payment_requested_consumer.subscribe({ topic: "payment-requested", fromBeginning: true });
+    await payment_requested_consumer.run({
+      eachMessage: paymentRequestedHandler_default
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Error in payment-request consumer: ${error.message}`);
+    }
+  }
+}
+var paymentRequestedConsumer_default = paymentRequested;
+
 // src/kafka/handlers/rideCompletedHandler.ts
 import { isInRide as isInRide3 } from "@prisma/client";
 async function rideCompletedHandler({ message }) {
-  const { captainId, rideData } = JSON.parse(message.value.toString());
-  const { userId } = rideData;
-  await prismaClient_default.users.update({
-    where: { userId },
+  const { order, userId, captainId, rideId, fare } = JSON.parse(message.value.toString());
+  await database_default.users.update({
+    where: {
+      userId
+    },
     data: {
       in_ride: isInRide3.NOT_IN_RIDE
     }
   });
-  console.log(`${captainId} completed ${rideData.rideId}`);
-  await redisClient_default.del(`rideData:${userId}`);
+  console.log(`${captainId} completed ${rideId}`);
+  await redis_default.del(`rideData:${userId}`);
 }
 var rideCompletedHandler_default = rideCompletedHandler;
 
@@ -522,8 +567,12 @@ async function rideConfirmedHandler({ message }) {
   try {
     const { captainId, rideData } = JSON.parse(message.value.toString());
     const { userId } = rideData;
-    await prismaClient_default.users.update({
-      where: { userId },
+    console.log("capId: " + captainId);
+    console.log("rd: " + Object.keys(rideData));
+    await database_default.users.update({
+      where: {
+        userId
+      },
       data: {
         in_ride: isInRide4.IN_RIDE
       }
@@ -591,6 +640,7 @@ async function startKafka() {
   await rideConfirmedConsumer_default();
   await fareFetched_default();
   await rideCompletedConsumer_default();
+  await paymentRequestedConsumer_default();
 }
 var kafka_default = startKafka;
 

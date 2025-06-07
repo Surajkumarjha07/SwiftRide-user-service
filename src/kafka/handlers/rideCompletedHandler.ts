@@ -1,22 +1,23 @@
 import { EachMessagePayload } from "kafkajs";
-import prisma from "../../prisma/prismaClient.js";
+import prisma from "../../config/database.js";
 import { isInRide } from "@prisma/client";
-import redisClient from "../../redis/redisClient.js";
+import redis from "../../config/redis.js";
 
 async function rideCompletedHandler({ message }: EachMessagePayload) {
-    const { captainId, rideData } = JSON.parse(message.value!.toString());
-    const { userId } = rideData;
+    const { order, userId, captainId, rideId, fare } = JSON.parse(message.value!.toString());
 
     await prisma.users.update({
-        where: { userId: userId },
+        where: {
+            userId: userId
+        },
         data: {
             in_ride: isInRide.NOT_IN_RIDE
         }
     });
 
-    console.log(`${captainId} completed ${rideData.rideId}`);    
+    console.log(`${captainId} completed ${rideId}`);
 
-    await redisClient.del(`rideData:${userId}`);
+    await redis.del(`rideData:${userId}`);
 }
 
 export default rideCompletedHandler;

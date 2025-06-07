@@ -1,11 +1,11 @@
 import { isInRide } from "@prisma/client";
-import redisClient from "../../redis/redisClient.js";
-import prisma from "../../prisma/prismaClient.js";
+import redis from "../../config/redis.js";
+import prisma from "../../config/database.js";
 import sendProducerMessage from "../../kafka/producers/producerTemplate.js";
 
 async function rideCancel(userId: string) {
     try {
-        const rideData = await redisClient.hgetall(`rideData:${userId}`);
+        const rideData = await redis.hgetall(`rideData:${userId}`);
 
         await prisma.users.updateMany({
             where: { userId: userId, in_ride: isInRide.IN_RIDE },
@@ -16,7 +16,7 @@ async function rideCancel(userId: string) {
 
         await sendProducerMessage("ride-cancelled", rideData);
 
-        await redisClient.del(`rideData:${userId}`);
+        await redis.del(`rideData:${userId}`);
 
     } catch (error) {
         if (error instanceof Error) {

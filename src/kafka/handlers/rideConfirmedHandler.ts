@@ -1,14 +1,19 @@
 import { EachMessagePayload } from "kafkajs";
-import prisma from "../../prisma/prismaClient.js";
+import prisma from "../../config/database.js";
 import { isInRide } from "@prisma/client";
 
 async function rideConfirmedHandler({ message }: EachMessagePayload) {
     try {
         const { captainId, rideData } = JSON.parse(message.value!.toString());
         const { userId } = rideData;
+
+        console.log("capId: " + captainId);
+        console.log("rd: " + Object.keys(rideData));
         
         await prisma.users.update({
-            where: { userId: userId },
+            where: {
+                userId: userId
+            },
             data: {
                 in_ride: isInRide.IN_RIDE
             }

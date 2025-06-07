@@ -1,12 +1,12 @@
 import { EachMessagePayload } from "kafkajs";
-import redisClient from "../../redis/redisClient.js";
+import redis from "../../config/redis.js";
 
 async function fareFetchedHandler({ message }: EachMessagePayload) {
     try {
         const { rideId, userId, pickUpLocation, destination, locationCoordinates, destinationCoordinates, fare } = JSON.parse(message.value!.toString());
 
         // redis caching for future inter-service transactions
-        await redisClient.hmset(`rideData:${userId}`, {
+        await redis.hmset(`rideData:${userId}`, {
             rideId,
             userId,
             pickUpLocation,

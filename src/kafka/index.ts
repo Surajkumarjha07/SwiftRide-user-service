@@ -1,5 +1,6 @@
 import { consumerInit } from "./consumerInIt.js";
 import fareFetched from "./consumers/fareFetched.js";
+import paymentRequested from "./consumers/paymentRequestedConsumer.js";
 import rideCompleted from "./consumers/rideCompletedConsumer.js";
 import rideConfirmed from "./consumers/rideConfirmedConsumer.js";
 import kafkaInit from "./kafkaAdmin.js";
@@ -27,6 +28,7 @@ async function startKafka() {
     await rideConfirmed();
     await fareFetched();
     await rideCompleted();
+    await paymentRequested();
 }
 
 export default startKafka;
