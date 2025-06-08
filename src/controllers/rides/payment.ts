@@ -4,10 +4,14 @@ import UserPayload from "../../types/userPayloads.js";
 
 async function handlePaymentDone(req: Request, res: Response) {
     try {
-        const { userId } = req.user as UserPayload;
-        const { rideId, captainId, fare } = req.body;
+        // const { userId } = req.user as UserPayload;
+        const { userId, rideId, captainId, fare, payment_id } = req.body;
 
-        await sendProducerMessage("payment-done", { userId, captainId, rideId, fare });
+        await sendProducerMessage("payment-done", { userId, captainId, rideId, fare, payment_id });
+
+        res.status(200).json({
+            message: "payment processing"
+        })
 
     } catch (error) {
         if (error instanceof Error) {   

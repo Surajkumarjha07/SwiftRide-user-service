@@ -430,9 +430,11 @@ var confirmRide_default = handleConfirmRide;
 // src/controllers/rides/payment.ts
 async function handlePaymentDone(req, res) {
   try {
-    const { userId } = req.user;
-    const { rideId, captainId, fare } = req.body;
-    await producerTemplate_default("payment-done", { userId, captainId, rideId, fare });
+    const { userId, rideId, captainId, fare, payment_id } = req.body;
+    await producerTemplate_default("payment-done", { userId, captainId, rideId, fare, payment_id });
+    res.status(200).json({
+      message: "payment processing"
+    });
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`Error in payment controller: ${error.message}`);
@@ -446,7 +448,7 @@ var router2 = Router();
 router2.post("/ride-request", userAuth_default, rideRequest_default);
 router2.post("/cancel-ride", userAuth_default, rideCancellation_default);
 router2.post("/confirm-ride", userAuth_default, confirmRide_default);
-router2.post("/payment", userAuth_default, payment_default);
+router2.post("/payment", payment_default);
 var rideRoutes_default = router2;
 
 // src/kafka/consumerInIt.ts
@@ -532,7 +534,7 @@ var paymentRequestedConsumer_default = paymentRequested;
 // src/kafka/handlers/rideCompletedHandler.ts
 import { isInRide as isInRide3 } from "@prisma/client";
 async function rideCompletedHandler({ message }) {
-  const { order, userId, captainId, rideId, fare } = JSON.parse(message.value.toString());
+  const { userId, captainId, rideId, fare } = JSON.parse(message.value.toString());
   await database_default.users.update({
     where: {
       userId

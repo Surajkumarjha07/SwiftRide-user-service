@@ -10,6 +10,6 @@ const router = Router();
 router.post("/ride-request", authenticate, handleRideRequest);
 router.post("/cancel-ride", authenticate, handleRideCancellation);
 router.post("/confirm-ride", authenticate, handleConfirmRide);
-router.post("/payment", authenticate, handlePaymentDone);
+router.post("/payment",  handlePaymentDone);
 
 export default router;
