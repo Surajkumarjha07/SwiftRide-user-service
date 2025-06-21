@@ -13,17 +13,20 @@ var database_default = prisma;
 
 // src/services/userServices/deleteUserService.ts
 import bcrypt from "bcrypt";
-async function deleteUser({ email, password }) {
+async function deleteUser({ userEmail, password }) {
   try {
-    const user = await database_default.users.findFirst({ where: { email } });
+    const user = await database_default.users.findFirst({ where: { email: userEmail } });
+    if (!user) {
+      throw new Error("User doesn't exist!");
+    }
     let passwordMatched;
     if (user) {
       passwordMatched = await bcrypt.compare(password, user.password);
     }
-    if (!user || !passwordMatched) {
-      throw new Error("Incorrect email or password!");
+    if (!passwordMatched) {
+      throw new Error("Incorrect password!");
     }
-    const deletedUser = await database_default.users.delete({ where: { email } });
+    const deletedUser = await database_default.users.delete({ where: { email: userEmail } });
     return deletedUser;
   } catch (error) {
     if (error instanceof Error) {
@@ -47,7 +50,7 @@ async function logInUser({ email, password }) {
     if (!user || !passwordMatched) {
       throw new Error("Incorrect email or password!");
     }
-    const token = jwt.sign({ userEmail: email, userName: user.name, userId: user.userId }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign({ userEmail: email, userName: user.name, userId: user.userId, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1h" });
     return token;
   } catch (error) {
     if (error instanceof Error) {
@@ -90,24 +93,33 @@ var signUpUserService_default = signUpUser;
 
 // src/services/userServices/updateUserService.ts
 import bcrypt4 from "bcrypt";
-async function updateUser({ newEmail, newName, newPassword, newRole, oldPassword, email }) {
+async function updateUser({ newEmail, newName, newPassword, oldPassword, userEmail }) {
   try {
     const user = await database_default.users.findFirst({
-      where: { email }
+      where: { email: userEmail }
     });
     let passwordMatched;
-    if (user) {
+    if (user && oldPassword) {
       passwordMatched = await bcrypt4.compare(oldPassword, user.password);
     }
     if (!passwordMatched || !user) {
       throw new Error("Incorrect Email or Password!");
     }
-    const saltRounds = 10;
-    const salt = await bcrypt4.genSalt(saltRounds);
-    const hashedPassword = await bcrypt4.hash(newPassword, salt);
+    let updateData = {};
+    if (newPassword) {
+      const saltRounds = 10;
+      const salt = await bcrypt4.genSalt(saltRounds);
+      updateData.password = await bcrypt4.hash(newPassword, salt);
+    }
+    if (newEmail) {
+      updateData.email = newEmail;
+    }
+    if (newName) {
+      updateData.name = newName;
+    }
     const updatedUser = await database_default.users.update({
-      where: { email },
-      data: { email: newEmail, name: newName, password: hashedPassword, role: newRole }
+      where: { email: userEmail },
+      data: updateData
     });
     return updatedUser;
   } catch (error) {
@@ -184,9 +196,19 @@ var logIn_default = handleLogIn;
 // src/controllers/users/update.ts
 async function handleUpdateUserInfo(req, res) {
   try {
-    const { newEmail, newName, newPassword, newRole, oldPassword } = req.body;
-    const { email } = req.user;
-    const updatedUser = await userService.updateUser({ newEmail, newName, newPassword, newRole, oldPassword, email });
+    const { newEmail, newName, newPassword, oldPassword } = req.body;
+    const { userEmail } = req.user;
+    if (!userEmail) {
+      return res.status(403).json({
+        message: "email not available or token expired!"
+      });
+    }
+    if (!newEmail && !newName && !newPassword) {
+      return res.status(400).json({
+        message: "atleast one field is required to update account."
+      });
+    }
+    const updatedUser = await userService.updateUser({ newEmail: newEmail.trim(), newName: newName.trim(), newPassword: newPassword.trim(), oldPassword, userEmail });
     res.status(200).json({
       message: "User updated!",
       updatedUser
@@ -207,7 +229,11 @@ import jwt2 from "jsonwebtoken";
 import dotenv2 from "dotenv";
 dotenv2.config();
 async function authenticate(req, res, next) {
-  let token = req.cookies.authtoken || req.headers["authorization"]?.split("Bearer ")[1];
+  let authHeader = req.headers["authorization"];
+  let token;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = req.cookies.authToken || authHeader.split(" ")[1];
+  }
   if (!token) {
     res.status(404).json({ message: "token not available" });
     return;
@@ -228,8 +254,8 @@ var userAuth_default = authenticate;
 async function handleDeleteUser(req, res) {
   try {
     const { password } = req.body;
-    const { email } = req.user;
-    const deletedUser = await userService.deleteUser({ email, password });
+    const { userEmail } = req.user;
+    const deletedUser = await userService.deleteUser({ userEmail, password });
     res.status(200).json({
       message: "User deleted!",
       deletedUser
@@ -245,12 +271,35 @@ async function handleDeleteUser(req, res) {
 }
 var delete_default = handleDeleteUser;
 
+// src/controllers/users/logout.ts
+async function handleLogOut(req, res) {
+  try {
+    return res.clearCookie("authToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: "/"
+    }).status(200).json({
+      message: "Logout successful!"
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({
+        message: error.message || "Internal server error!"
+      });
+      return;
+    }
+  }
+}
+var logout_default = handleLogOut;
+
 // src/routes/userRoutes.ts
 var router = express.Router();
 router.post("/sign-up", signUp_default);
 router.post("/log-in", logIn_default);
 router.put("/update-user", userAuth_default, update_default);
 router.delete("/delete-user", userAuth_default, delete_default);
+router.post("/logout", logout_default);
 var userRoutes_default = router;
 
 // src/routes/rideRoutes.ts
@@ -430,10 +479,11 @@ var confirmRide_default = handleConfirmRide;
 // src/controllers/rides/payment.ts
 async function handlePaymentDone(req, res) {
   try {
-    const { userId, rideId, captainId, fare, payment_id } = req.body;
-    await producerTemplate_default("payment-done", { userId, captainId, rideId, fare, payment_id });
+    const { fare, payment_id, orderId, order, userId, rideId, captainId } = req.body;
+    console.log("order: " + orderId);
+    await producerTemplate_default("payment-done", { fare, payment_id, orderId, order, userId, rideId, captainId });
     res.status(200).json({
-      message: "payment processing"
+      message: "payment processed!"
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -534,7 +584,7 @@ var paymentRequestedConsumer_default = paymentRequested;
 // src/kafka/handlers/rideCompletedHandler.ts
 import { isInRide as isInRide3 } from "@prisma/client";
 async function rideCompletedHandler({ message }) {
-  const { userId, captainId, rideId, fare } = JSON.parse(message.value.toString());
+  const { userId, rideId, captainId } = JSON.parse(message.value.toString());
   await database_default.users.update({
     where: {
       userId

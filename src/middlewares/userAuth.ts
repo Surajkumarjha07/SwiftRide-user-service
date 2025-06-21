@@ -12,7 +12,14 @@ declare module 'express-serve-static-core' {
 dotenv.config();
 
 async function authenticate(req: Request, res: Response, next: NextFunction) {
-    let token = req.cookies.authtoken || req.headers["authorization"]?.split("Bearer ")[1];
+    let authHeader = req.headers["authorization"];
+    
+    let token: string | undefined;
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+        token = req.cookies.authToken || authHeader.split(" ")[1];
+    }
+
     if (!token) {
         res.status(404).json({ message: "token not available" });
         return;

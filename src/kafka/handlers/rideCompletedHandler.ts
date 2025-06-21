@@ -4,7 +4,7 @@ import { isInRide } from "@prisma/client";
 import redis from "../../config/redis.js";
 
 async function rideCompletedHandler({ message }: EachMessagePayload) {
-    const { userId, captainId, rideId, fare } = JSON.parse(message.value!.toString());
+    const { userId, rideId, captainId } = JSON.parse(message.value!.toString());
 
     await prisma.users.update({
         where: {

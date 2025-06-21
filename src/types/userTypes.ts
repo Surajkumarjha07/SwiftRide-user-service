@@ -11,13 +11,17 @@ type logInType = {
     password: string
 }
 
-type updateType = {
-    newEmail: string,
-    newName: string,
-    newPassword: string,
-    newRole: string,
-    oldPassword: string,
-    email: string
+type deleteType = {
+    userEmail: string,
+    password: string
 }
 
-export type {signUpType, logInType, updateType};
+type updateType = {
+    newEmail?: string,
+    newName?: string,
+    newPassword?: string,
+    oldPassword: string,
+    userEmail: string
+}
+
+export type { signUpType, logInType, updateType, deleteType };

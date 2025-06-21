@@ -1,7 +1,7 @@
 type UserPayload = {
     userId: string,
-    name: string,
-    email: string
+    userName: string,
+    userEmail: string
 }
 
 export default UserPayload;
