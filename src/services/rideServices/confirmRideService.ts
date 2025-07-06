@@ -3,7 +3,7 @@ import sendProducerMessage from "../../kafka/producers/producerTemplate.js";
 import prisma from "../../config/database.js";
 import redis from "../../config/redis.js";
 
-async function confirmRide(userId: string) {
+async function confirmRide(userId: string, fare: string, vehicle: string) {
     try {
         // database update
         await prisma.users.update({
@@ -11,12 +11,15 @@ async function confirmRide(userId: string) {
                 userId: userId
             },
             data: {
-                in_ride: isInRide.IN_RIDE
+                in_ride: isInRide.IN_RIDE,
             }
         })
 
         // redis cached data
         const rideData = await redis.hgetall(`rideData:${userId}`);
+        rideData.fare = fare;
+        rideData.vehicle = vehicle;
+        await redis.hmset(`rideData:${userId}`, rideData);
 
         // kafka message
         await sendProducerMessage("ride-request", rideData);

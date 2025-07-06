@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 
 async function handleLogOut(req: Request, res: Response): Promise<any> {
     try {
+
         return res.clearCookie("authToken", {
             httpOnly: true,
             secure: true,

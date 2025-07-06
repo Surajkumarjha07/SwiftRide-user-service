@@ -6,10 +6,11 @@ import { rideService } from "../../services/rideServices/index.js";
 async function handleConfirmRide(req: Request, res: Response) {
     try {
         const { userId } = req.user as UserPayload;
+        const { fare, vehicle } = req.body;
 
         if (!userId) throw new Error("user not authorized!");
 
-        await rideService.confirmRide(userId);
+        await rideService.confirmRide(userId, fare, vehicle);
 
         res.status(200).json({
             message: "ride confirmation request sent successfully!"

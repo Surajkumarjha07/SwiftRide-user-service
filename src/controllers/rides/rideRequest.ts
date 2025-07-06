@@ -4,7 +4,7 @@ import { rideService } from "../../services/rideServices/index.js";
 
 async function handleRideRequest(req: Request, res: Response) {
     try {
-        const { locationCoordinates, destinationCoordinates } = req.body;
+        const { location, destination } = req.body;
         const { userId } = req.user as UserPayload;
 
         if (!userId) {
@@ -14,14 +14,14 @@ async function handleRideRequest(req: Request, res: Response) {
             return;
         }
 
-        if (!locationCoordinates || !destinationCoordinates) {
+        if (!location || !destination) {
             res.status(400).json({
                 message: "locationCoordinates and destinationCoordinates are required!"
             });
             return;
         }
 
-        await rideService.rideRequest({ userId, locationCoordinates, destinationCoordinates });
+        await rideService.rideRequest({ userId, location, destination });
 
         res.status(200).json({
             message: "ride request sent successfully!"

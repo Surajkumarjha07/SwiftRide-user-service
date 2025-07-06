@@ -229,14 +229,9 @@ import jwt2 from "jsonwebtoken";
 import dotenv2 from "dotenv";
 dotenv2.config();
 async function authenticate(req, res, next) {
-  let authHeader = req.headers["authorization"];
-  let token;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    token = req.cookies.authToken || authHeader.split(" ")[1];
-  }
+  let token = req.cookies.authToken || req.headers["authorization"]?.split("Bearer ")[1];
   if (!token) {
-    res.status(404).json({ message: "token not available" });
-    return;
+    return res.status(404).json({ message: "token not available" });
   }
   try {
     const verified = jwt2.verify(token, process.env.JWT_SECRET);
@@ -245,7 +240,7 @@ async function authenticate(req, res, next) {
       next();
     }
   } catch (error) {
-    res.status(403).json({ message: "Forbidden: Invalid or expired token" });
+    return res.status(403).json({ message: "Forbidden: Invalid or expired token" });
   }
 }
 var userAuth_default = authenticate;
@@ -341,6 +336,7 @@ async function sendProducerMessage(topic, value) {
       topic,
       messages: [{ value: JSON.stringify(value) }]
     });
+    console.log(`${topic} sent`);
   } catch (error) {
     console.log(`error in sending ${topic}: ${error}`);
   }
@@ -353,7 +349,7 @@ var redis = new Redis();
 var redis_default = redis;
 
 // src/services/rideServices/confirmRideService.ts
-async function confirmRide(userId) {
+async function confirmRide(userId, fare, vehicle) {
   try {
     await database_default.users.update({
       where: {
@@ -364,6 +360,9 @@ async function confirmRide(userId) {
       }
     });
     const rideData = await redis_default.hgetall(`rideData:${userId}`);
+    rideData.fare = fare;
+    rideData.vehicle = vehicle;
+    await redis_default.hmset(`rideData:${userId}`, rideData);
     await producerTemplate_default("ride-request", rideData);
   } catch (error) {
     if (error instanceof Error) {
@@ -395,9 +394,9 @@ async function rideCancel(userId) {
 var rideCancelService_default = rideCancel;
 
 // src/services/rideServices/rideRequestService.ts
-async function rideRequest({ userId, locationCoordinates, destinationCoordinates }) {
+async function rideRequest({ userId, location, destination }) {
   try {
-    await producerTemplate_default("calculate-fare", { userId, locationCoordinates, destinationCoordinates });
+    await producerTemplate_default("calculate-fare", { userId, location, destination });
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`Error in confirm-ride service: ${error.message}`);
@@ -412,7 +411,7 @@ var rideService = { rideRequest: rideRequestService_default, rideCancel: rideCan
 // src/controllers/rides/rideRequest.ts
 async function handleRideRequest(req, res) {
   try {
-    const { locationCoordinates, destinationCoordinates } = req.body;
+    const { location, destination } = req.body;
     const { userId } = req.user;
     if (!userId) {
       res.status(404).json({
@@ -420,13 +419,13 @@ async function handleRideRequest(req, res) {
       });
       return;
     }
-    if (!locationCoordinates || !destinationCoordinates) {
+    if (!location || !destination) {
       res.status(400).json({
         message: "locationCoordinates and destinationCoordinates are required!"
       });
       return;
     }
-    await rideService.rideRequest({ userId, locationCoordinates, destinationCoordinates });
+    await rideService.rideRequest({ userId, location, destination });
     res.status(200).json({
       message: "ride request sent successfully!"
     });
@@ -463,8 +462,9 @@ var rideCancellation_default = handleRideCancellation;
 async function handleConfirmRide(req, res) {
   try {
     const { userId } = req.user;
+    const { fare, vehicle } = req.body;
     if (!userId) throw new Error("user not authorized!");
-    await rideService.confirmRide(userId);
+    await rideService.confirmRide(userId, fare, vehicle);
     res.status(200).json({
       message: "ride confirmation request sent successfully!"
     });
@@ -527,9 +527,10 @@ async function fareFetchedHandler({ message }) {
       pickUpLocation_latitude: locationCoordinates.latitude,
       pickUpLocation_longitude: locationCoordinates.longitude,
       destination_latitude: destinationCoordinates.latitude,
-      destination_longitude: destinationCoordinates.longitude,
-      fare
+      destination_longitude: destinationCoordinates.longitude
     });
+    console.log("fare: ", fare);
+    await producerTemplate_default("show-fare", { rideId, userId, pickUpLocation, destination, locationCoordinates, destinationCoordinates, fare });
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`Error in fare fetching handler: ${error.message}`);
