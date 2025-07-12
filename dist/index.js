@@ -363,7 +363,7 @@ async function confirmRide(userId, fare, vehicle) {
     rideData.fare = fare;
     rideData.vehicle = vehicle;
     await redis_default.hmset(`rideData:${userId}`, rideData);
-    await producerTemplate_default("ride-request", rideData);
+    await producerTemplate_default("ride-request", { rideData });
   } catch (error) {
     if (error instanceof Error) {
       console.log("Ride request error: ", error.message);
@@ -383,7 +383,7 @@ async function rideCancel(userId) {
         in_ride: isInRide2.NOT_IN_RIDE
       }
     });
-    await producerTemplate_default("ride-cancelled", rideData);
+    await producerTemplate_default("ride-cancelled", { rideData });
     await redis_default.del(`rideData:${userId}`);
   } catch (error) {
     if (error instanceof Error) {
@@ -622,15 +622,18 @@ async function rideConfirmedHandler({ message }) {
     const { userId } = rideData;
     console.log("capId: " + captainId);
     console.log("rd: " + Object.keys(rideData));
-    await database_default.users.update({
-      where: {
-        userId
-      },
-      data: {
-        in_ride: isInRide4.IN_RIDE
-      }
-    });
+    if (userId) {
+      await database_default.users.update({
+        where: {
+          userId
+        },
+        data: {
+          in_ride: isInRide4.IN_RIDE
+        }
+      });
+    }
     console.log(`ride confirmed by ${captainId} for ${rideData.rideId}`);
+    await producerTemplate_default("ride-confirmed-notify-user", { rideData });
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`Error in ride-confirm handler ${error.message}`);

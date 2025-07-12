@@ -1,4 +1,5 @@
 import { EachMessagePayload } from "kafkajs";
+import sendProducerMessage from "../producers/producerTemplate.js";
 
 async function handlePaymentRequested({ message }: EachMessagePayload) {
     try {
@@ -7,6 +8,8 @@ async function handlePaymentRequested({ message }: EachMessagePayload) {
         console.log("payment data: " + rideData);
         
         // will emit sockets to user 
+
+        // await sendProducerMessage("payment-requested-notify-user", {rideData, captainId});
 
     } catch (error) {
         if (error instanceof Error) {

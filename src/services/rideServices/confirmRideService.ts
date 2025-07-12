@@ -22,7 +22,7 @@ async function confirmRide(userId: string, fare: string, vehicle: string) {
         await redis.hmset(`rideData:${userId}`, rideData);
 
         // kafka message
-        await sendProducerMessage("ride-request", rideData);
+        await sendProducerMessage("ride-request", { rideData });
 
     } catch (error) {
         if (error instanceof Error) {

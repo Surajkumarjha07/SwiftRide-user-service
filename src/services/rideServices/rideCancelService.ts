@@ -14,7 +14,7 @@ async function rideCancel(userId: string) {
             }
         })
 
-        await sendProducerMessage("ride-cancelled", rideData);
+        await sendProducerMessage("ride-cancelled", {rideData});
 
         await redis.del(`rideData:${userId}`);
 
