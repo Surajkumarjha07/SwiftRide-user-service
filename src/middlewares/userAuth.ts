@@ -3,12 +3,6 @@ import dotenv from "dotenv";
 import { NextFunction, Request, Response } from "express";
 import UserPayload from "../types/userPayloads.js";
 
-declare module 'express-serve-static-core' {
-    interface Request {
-        user?: UserPayload
-    }
-}
-
 dotenv.config();
 
 async function authenticate(req: Request, res: Response, next: NextFunction): Promise<any> {

@@ -7,7 +7,7 @@ async function fareFetchedHandler({ message }: EachMessagePayload) {
         const { rideId, userId, pickUpLocation, destination, locationCoordinates, destinationCoordinates, fare } = JSON.parse(message.value!.toString());
 
         // redis caching for future inter-service transactions
-        await redis.hmset(`rideData:${userId}`, {
+        await redis.hset(`rideData:${userId}`, {
             rideId,
             userId,
             pickUpLocation,

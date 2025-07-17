@@ -300,9 +300,6 @@ var userRoutes_default = router;
 // src/routes/rideRoutes.ts
 import { Router } from "express";
 
-// src/services/rideServices/confirmRideService.ts
-import { isInRide } from "@prisma/client";
-
 // src/kafka/producerInIt.ts
 import { Partitioners } from "kafkajs";
 
@@ -351,18 +348,10 @@ var redis_default = redis;
 // src/services/rideServices/confirmRideService.ts
 async function confirmRide(userId, fare, vehicle) {
   try {
-    await database_default.users.update({
-      where: {
-        userId
-      },
-      data: {
-        in_ride: isInRide.IN_RIDE
-      }
-    });
     const rideData = await redis_default.hgetall(`rideData:${userId}`);
     rideData.fare = fare;
     rideData.vehicle = vehicle;
-    await redis_default.hmset(`rideData:${userId}`, rideData);
+    await redis_default.hset(`rideData:${userId}`, rideData);
     await producerTemplate_default("ride-request", { rideData });
   } catch (error) {
     if (error instanceof Error) {
@@ -373,14 +362,14 @@ async function confirmRide(userId, fare, vehicle) {
 var confirmRideService_default = confirmRide;
 
 // src/services/rideServices/rideCancelService.ts
-import { isInRide as isInRide2 } from "@prisma/client";
+import { isInRide } from "@prisma/client";
 async function rideCancel(userId) {
   try {
     const rideData = await redis_default.hgetall(`rideData:${userId}`);
     await database_default.users.updateMany({
-      where: { userId, in_ride: isInRide2.IN_RIDE },
+      where: { userId, in_ride: isInRide.IN_RIDE },
       data: {
-        in_ride: isInRide2.NOT_IN_RIDE
+        in_ride: isInRide.NOT_IN_RIDE
       }
     });
     await producerTemplate_default("ride-cancelled", { rideData });
@@ -506,12 +495,14 @@ var ride_confirmed_consumer = kafkaClient_default.consumer({ groupId: "ride-conf
 var ride_fare_consumer = kafkaClient_default.consumer({ groupId: "fetched-fare-group" });
 var ride_completed_consumer = kafkaClient_default.consumer({ groupId: "ride_completed_notify_group" });
 var payment_requested_consumer = kafkaClient_default.consumer({ groupId: "payment_requested_group" });
+var user_location_update_consumer = kafkaClient_default.consumer({ groupId: "user_location_update_group" });
 async function consumerInit() {
   await Promise.all([
     ride_confirmed_consumer.connect(),
     ride_fare_consumer.connect(),
     ride_completed_consumer.connect(),
-    payment_requested_consumer.connect()
+    payment_requested_consumer.connect(),
+    user_location_update_consumer.connect()
   ]);
 }
 
@@ -519,7 +510,7 @@ async function consumerInit() {
 async function fareFetchedHandler({ message }) {
   try {
     const { rideId, userId, pickUpLocation, destination, locationCoordinates, destinationCoordinates, fare } = JSON.parse(message.value.toString());
-    await redis_default.hmset(`rideData:${userId}`, {
+    await redis_default.hset(`rideData:${userId}`, {
       rideId,
       userId,
       pickUpLocation,
@@ -554,36 +545,8 @@ async function fareFetched() {
 }
 var fareFetched_default = fareFetched;
 
-// src/kafka/handlers/paymentRequestedHandler.ts
-async function handlePaymentRequested({ message }) {
-  try {
-    const { rideData, captainId } = JSON.parse(message.value.toString());
-    console.log("payment data: " + rideData);
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Error in payment-requested handler: ${error.message}`);
-    }
-  }
-}
-var paymentRequestedHandler_default = handlePaymentRequested;
-
-// src/kafka/consumers/paymentRequestedConsumer.ts
-async function paymentRequested() {
-  try {
-    await payment_requested_consumer.subscribe({ topic: "payment-requested", fromBeginning: true });
-    await payment_requested_consumer.run({
-      eachMessage: paymentRequestedHandler_default
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Error in payment-request consumer: ${error.message}`);
-    }
-  }
-}
-var paymentRequestedConsumer_default = paymentRequested;
-
 // src/kafka/handlers/rideCompletedHandler.ts
-import { isInRide as isInRide3 } from "@prisma/client";
+import { isInRide as isInRide2 } from "@prisma/client";
 async function rideCompletedHandler({ message }) {
   const { userId, rideId, captainId } = JSON.parse(message.value.toString());
   await database_default.users.update({
@@ -591,7 +554,7 @@ async function rideCompletedHandler({ message }) {
       userId
     },
     data: {
-      in_ride: isInRide3.NOT_IN_RIDE
+      in_ride: isInRide2.NOT_IN_RIDE
     }
   });
   console.log(`${captainId} completed ${rideId}`);
@@ -615,7 +578,7 @@ async function rideCompleted() {
 var rideCompletedConsumer_default = rideCompleted;
 
 // src/kafka/handlers/rideConfirmedHandler.ts
-import { isInRide as isInRide4 } from "@prisma/client";
+import { isInRide as isInRide3 } from "@prisma/client";
 async function rideConfirmedHandler({ message }) {
   try {
     const { captainId, rideData } = JSON.parse(message.value.toString());
@@ -628,7 +591,7 @@ async function rideConfirmedHandler({ message }) {
           userId
         },
         data: {
-          in_ride: isInRide4.IN_RIDE
+          in_ride: isInRide3.IN_RIDE
         }
       });
     }
@@ -656,6 +619,39 @@ async function rideConfirmed() {
   }
 }
 var rideConfirmedConsumer_default = rideConfirmed;
+
+// src/userLocationMap.ts
+var userLocationMap = /* @__PURE__ */ new Map();
+var userLocationMap_default = userLocationMap;
+
+// src/kafka/handlers/userLocationUpdateHandler.ts
+async function userLocationUpdateHandler({ message }) {
+  try {
+    const { userId, coordinates } = JSON.parse(message.value.toString());
+    const user_redis_coord = await redis_default.hgetall(`user-location-updates:${userId}`);
+    const latitudeChanged = Number(user_redis_coord.latitude) !== coordinates.latitude;
+    const longitudeChanged = Number(user_redis_coord.longitude) !== coordinates.longitude;
+    if (!latitudeChanged && !longitudeChanged) return;
+    await redis_default.hset(`user-location-updates:${userId}`, coordinates);
+    userLocationMap_default.set(userId, coordinates);
+  } catch (error) {
+    throw new Error("Error in user-location-update handler: " + error.message);
+  }
+}
+var userLocationUpdateHandler_default = userLocationUpdateHandler;
+
+// src/kafka/consumers/userLocationUpdate.ts
+async function userLocationUpdate() {
+  try {
+    await user_location_update_consumer.subscribe({ topic: "user-location-update", fromBeginning: true });
+    await user_location_update_consumer.run({
+      eachMessage: userLocationUpdateHandler_default
+    });
+  } catch (error) {
+    throw new Error("Error in user-location-update consumer: " + error.message);
+  }
+}
+var userLocationUpdate_default = userLocationUpdate;
 
 // src/kafka/kafkaAdmin.ts
 async function kafkaInit() {
@@ -696,9 +692,53 @@ async function startKafka() {
   await rideConfirmedConsumer_default();
   await fareFetched_default();
   await rideCompletedConsumer_default();
-  await paymentRequestedConsumer_default();
+  await userLocationUpdate_default();
 }
 var kafka_default = startKafka;
+
+// src/utils/bulkUpdate.ts
+import _ from "lodash";
+
+// src/utils/bulInsertDB.ts
+async function bulkInsertDB(chunks) {
+  for (const chunk of chunks) {
+    const ids = chunk.map(([userId, coordinates]) => `'${userId}'`).join(", ");
+    const latitudeCases = chunk.map(([userId, coordinates]) => `WHEN '${userId}' THEN ${coordinates.latitude}`).join(" ");
+    const longitudeCases = chunk.map(([userId, coordinates]) => `WHEN '${userId}' THEN ${coordinates.longitude}`).join(" ");
+    const query = `
+            UPDATE users 
+            SET
+            latitude = CASE userId ${latitudeCases} END,
+            longitude = CASE userId ${longitudeCases} END
+            WHERE userId IN (${ids});
+        `;
+    await database_default.$executeRawUnsafe(query);
+  }
+}
+var bulInsertDB_default = bulkInsertDB;
+
+// src/utils/bulkUpdate.ts
+async function bulkUpdate() {
+  try {
+    let buffer;
+    setInterval(async () => {
+      buffer = Array.from(userLocationMap_default.entries());
+      if (buffer.length === 0) return;
+      console.log("buffer: ", buffer);
+      console.log("map: ", userLocationMap_default.entries());
+      const chunks = _.chunk(buffer, 10);
+      try {
+        await bulInsertDB_default(chunks);
+        userLocationMap_default.clear();
+      } catch (error) {
+        throw new Error("Error in bulk inserting database: " + error.message);
+      }
+    }, 60 * 1e3);
+  } catch (error) {
+    throw new Error("Error in bulk updating databse: " + error.message);
+  }
+}
+var bulkUpdate_default = bulkUpdate;
 
 // src/index.ts
 dotenv3.config();
@@ -712,6 +752,7 @@ app.get("/", (req, res) => {
 app.use("/actions", userRoutes_default);
 app.use("/rides", rideRoutes_default);
 kafka_default();
+bulkUpdate_default();
 app.listen(Number(process.env.PORT), "0.0.0.0", () => {
   console.log("User service is running!");
 });

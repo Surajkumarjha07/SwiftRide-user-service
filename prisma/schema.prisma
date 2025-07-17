@@ -20,6 +20,8 @@ model users {
   name String
   password String
   role String
+  latitude Float @default(0.00)
+  longitude Float @default(0.00)
   in_ride isInRide @default(NOT_IN_RIDE)
 }
 

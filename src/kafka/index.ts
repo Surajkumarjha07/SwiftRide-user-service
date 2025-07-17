@@ -1,8 +1,8 @@
 import { consumerInit } from "./consumerInIt.js";
 import fareFetched from "./consumers/fareFetched.js";
-import paymentRequested from "./consumers/paymentRequestedConsumer.js";
 import rideCompleted from "./consumers/rideCompletedConsumer.js";
 import rideConfirmed from "./consumers/rideConfirmedConsumer.js";
+import userLocationUpdate from "./consumers/userLocationUpdate.js";
 import kafkaInit from "./kafkaAdmin.js";
 import { producerInit } from "./producerInIt.js";
 
@@ -12,7 +12,7 @@ async function startKafka() {
         await kafkaInit();
         console.log("Kafka initialization done.");
     })();
-    
+
     (async () => {
         console.log("Initializing Consumer...");
         await consumerInit();
@@ -28,7 +28,8 @@ async function startKafka() {
     await rideConfirmed();
     await fareFetched();
     await rideCompleted();
-    await paymentRequested();
+    await userLocationUpdate();
+
 }
 
 export default startKafka;

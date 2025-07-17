@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import userRoutes from "./routes/userRoutes.js";
 import rideRoutes from "./routes/rideRoutes.js";
 import startKafka from "./kafka/index.js";
+import bulkUpdate from "./utils/bulkUpdate.js";
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use("/rides", rideRoutes);
 
 //kafka handling
 startKafka();
+bulkUpdate();
 
 app.listen(Number(process.env.PORT), "0.0.0.0", () => {
     console.log("User service is running!");
