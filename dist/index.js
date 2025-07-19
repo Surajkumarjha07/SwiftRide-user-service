@@ -300,6 +300,28 @@ var userRoutes_default = router;
 // src/routes/rideRoutes.ts
 import { Router } from "express";
 
+// src/config/redis.ts
+import { Redis } from "ioredis";
+var redis = new Redis();
+var redis_default = redis;
+
+// src/services/rideServices/captainNotAssignedService.ts
+async function captainNotAssignedService(userId) {
+  try {
+    const rideData = await redis_default.hgetall(`rideData:${userId}`);
+    const { rideId } = rideData;
+    if (!Object.keys(rideData).includes("captainId")) {
+      await redis_default.del(`rideData:${userId}`);
+      await redis_default.del(`ride:${rideId}`);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    throw new Error("Error in captain-not-assigned service: " + error.message);
+  }
+}
+var captainNotAssignedService_default = captainNotAssignedService;
+
 // src/kafka/producerInIt.ts
 import { Partitioners } from "kafkajs";
 
@@ -339,11 +361,6 @@ async function sendProducerMessage(topic, value) {
   }
 }
 var producerTemplate_default = sendProducerMessage;
-
-// src/config/redis.ts
-import { Redis } from "ioredis";
-var redis = new Redis();
-var redis_default = redis;
 
 // src/services/rideServices/confirmRideService.ts
 async function confirmRide(userId, fare, vehicle) {
@@ -395,7 +412,7 @@ async function rideRequest({ userId, location, destination }) {
 var rideRequestService_default = rideRequest;
 
 // src/services/rideServices/index.ts
-var rideService = { rideRequest: rideRequestService_default, rideCancel: rideCancelService_default, confirmRide: confirmRideService_default };
+var rideService = { rideRequest: rideRequestService_default, rideCancel: rideCancelService_default, confirmRide: confirmRideService_default, captainNotAssignedService: captainNotAssignedService_default };
 
 // src/controllers/rides/rideRequest.ts
 async function handleRideRequest(req, res) {
@@ -442,7 +459,10 @@ async function handleRideCancellation(req, res) {
       message: "ride cancellation successfull!"
     });
   } catch (error) {
-    console.log("error in ride cancellation!");
+    console.log("error: ", error);
+    res.status(500).json({
+      message: "Internal server error!"
+    });
   }
 }
 var rideCancellation_default = handleRideCancellation;
@@ -458,9 +478,10 @@ async function handleConfirmRide(req, res) {
       message: "ride confirmation request sent successfully!"
     });
   } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Error in confirming ride: ${error.message}`);
-    }
+    console.log("error: ", error);
+    res.status(500).json({
+      message: "Internal server error!"
+    });
   }
 }
 var confirmRide_default = handleConfirmRide;
@@ -475,18 +496,41 @@ async function handlePaymentDone(req, res) {
       message: "payment processed!"
     });
   } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Error in payment controller: ${error.message}`);
-    }
+    console.log("error: ", error);
+    res.status(500).json({
+      message: "Internal server error!"
+    });
   }
 }
 var payment_default = handlePaymentDone;
+
+// src/controllers/rides/captainNotAssigned.ts
+async function handleCaptainNotAssigned(req, res) {
+  try {
+    const { userId } = req.user;
+    const captainAssigned = await rideService.captainNotAssignedService(userId);
+    if (!captainAssigned) {
+      return res.status(204).json({
+        message: "captain not assigned"
+      });
+    }
+    return res.status(200).json({
+      message: "captain assigned"
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: error.message
+    });
+  }
+}
+var captainNotAssigned_default = handleCaptainNotAssigned;
 
 // src/routes/rideRoutes.ts
 var router2 = Router();
 router2.post("/ride-request", userAuth_default, rideRequest_default);
 router2.post("/cancel-ride", userAuth_default, rideCancellation_default);
 router2.post("/confirm-ride", userAuth_default, confirmRide_default);
+router2.post("/captain-not-assigned", userAuth_default, captainNotAssigned_default);
 router2.post("/payment", payment_default);
 var rideRoutes_default = router2;
 
@@ -584,7 +628,6 @@ async function rideConfirmedHandler({ message }) {
     const { captainId, rideData } = JSON.parse(message.value.toString());
     const { userId } = rideData;
     console.log("capId: " + captainId);
-    console.log("rd: " + Object.keys(rideData));
     if (userId) {
       await database_default.users.update({
         where: {
@@ -633,6 +676,7 @@ async function userLocationUpdateHandler({ message }) {
     const longitudeChanged = Number(user_redis_coord.longitude) !== coordinates.longitude;
     if (!latitudeChanged && !longitudeChanged) return;
     await redis_default.hset(`user-location-updates:${userId}`, coordinates);
+    await redis_default.expire(`user-location-updates:${userId}`, 3600);
     userLocationMap_default.set(userId, coordinates);
   } catch (error) {
     throw new Error("Error in user-location-update handler: " + error.message);
@@ -724,8 +768,6 @@ async function bulkUpdate() {
     setInterval(async () => {
       buffer = Array.from(userLocationMap_default.entries());
       if (buffer.length === 0) return;
-      console.log("buffer: ", buffer);
-      console.log("map: ", userLocationMap_default.entries());
       const chunks = _.chunk(buffer, 10);
       try {
         await bulInsertDB_default(chunks);

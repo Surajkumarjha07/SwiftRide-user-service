@@ -15,9 +15,10 @@ async function handlePaymentDone(req: Request, res: Response) {
         })
 
     } catch (error) {
-        if (error instanceof Error) {
-            throw new Error(`Error in payment controller: ${error.message}`);
-        }
+        console.log("error: ", error);
+        res.status(500).json({
+            message: "Internal server error!"
+        })
     }
 }
 

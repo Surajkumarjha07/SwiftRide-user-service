@@ -2,6 +2,12 @@ import { Request, Response } from "express";
 import UserPayload from "../../types/userPayloads.js";
 import { rideService } from "../../services/rideServices/index.js";
 
+declare module "express-serve-static-core" {
+    interface Request {
+        user?: UserPayload
+    }
+}
+
 async function handleRideCancellation(req: Request, res: Response) {
     try {
         const { userId } = req.user as UserPayload;
@@ -20,7 +26,10 @@ async function handleRideCancellation(req: Request, res: Response) {
         })
 
     } catch (error) {
-        console.log("error in ride cancellation!");
+        console.log("error: ", error);
+        res.status(500).json({
+            message: "Internal server error!"
+        })
     }
 }
 

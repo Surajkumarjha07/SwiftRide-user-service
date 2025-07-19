@@ -9,7 +9,6 @@ async function rideConfirmedHandler({ message }: EachMessagePayload) {
         const { userId } = rideData;
 
         console.log("capId: " + captainId);
-        console.log("rd: " + Object.keys(rideData));
 
         if (userId) {
             await prisma.users.update({

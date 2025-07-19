@@ -14,7 +14,8 @@ async function userLocationUpdateHandler({ message }: EachMessagePayload) {
 
         if (!latitudeChanged && !longitudeChanged) return;
 
-        await redis.hset(`user-location-updates:${userId}`, coordinates);
+        await redis.hset(`user-location-updates:${userId}`, coordinates,);
+        await redis.expire(`user-location-updates:${userId}`, 3600);
         userLocationMap.set(userId, coordinates);
 
     } catch (error) {

@@ -17,9 +17,10 @@ async function handleConfirmRide(req: Request, res: Response) {
         })
 
     } catch (error) {
-        if (error instanceof Error) {
-            throw new Error(`Error in confirming ride: ${error.message}`);
-        }
+        console.log("error: ", error);
+        res.status(500).json({
+            message: "Internal server error!"
+        })
     }
 }
 

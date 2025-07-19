@@ -11,13 +11,9 @@ async function bulkUpdate() {
 
             if (buffer.length === 0) return;
 
-            console.log("buffer: ", buffer);
-            console.log("map: ", userLocationMap.entries());
-
             const chunks = _.chunk(buffer, 10);
 
             try {
-
                 await bulkInsertDB(chunks);
 
                 userLocationMap.clear();
