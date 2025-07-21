@@ -302,25 +302,8 @@ import { Router } from "express";
 
 // src/config/redis.ts
 import { Redis } from "ioredis";
-var redis = new Redis();
+var redis = new Redis("rediss://default:AeqBAAIjcDFmZTk5ZmUyNmQyZGQ0ZGQwOWE2ZmZlNzg4NzZiN2RkYXAxMA@proven-hare-60033.upstash.io:6379");
 var redis_default = redis;
-
-// src/services/rideServices/captainNotAssignedService.ts
-async function captainNotAssignedService(userId) {
-  try {
-    const rideData = await redis_default.hgetall(`rideData:${userId}`);
-    const { rideId } = rideData;
-    if (!Object.keys(rideData).includes("captainId")) {
-      await redis_default.del(`rideData:${userId}`);
-      await redis_default.del(`ride:${rideId}`);
-      return false;
-    }
-    return true;
-  } catch (error) {
-    throw new Error("Error in captain-not-assigned service: " + error.message);
-  }
-}
-var captainNotAssignedService_default = captainNotAssignedService;
 
 // src/kafka/producerInIt.ts
 import { Partitioners } from "kafkajs";
@@ -361,6 +344,24 @@ async function sendProducerMessage(topic, value) {
   }
 }
 var producerTemplate_default = sendProducerMessage;
+
+// src/services/rideServices/captainNotAssignedService.ts
+async function captainNotAssignedService(userId) {
+  try {
+    const rideData = await redis_default.hgetall(`rideData:${userId}`);
+    const { rideId } = rideData;
+    if (!Object.keys(rideData).includes("captainId")) {
+      await producerTemplate_default("no-captain-assigned", { rideData });
+      await redis_default.del(`rideData:${userId}`);
+      await redis_default.del(`ride:${rideId}`);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    throw new Error("Error in captain-not-assigned service: " + error.message);
+  }
+}
+var captainNotAssignedService_default = captainNotAssignedService;
 
 // src/services/rideServices/confirmRideService.ts
 async function confirmRide(userId, fare, vehicle) {
@@ -489,9 +490,11 @@ var confirmRide_default = handleConfirmRide;
 // src/controllers/rides/payment.ts
 async function handlePaymentDone(req, res) {
   try {
-    const { fare, payment_id, orderId, order, userId, rideId, captainId } = req.body;
+    const { userId } = req.user;
+    const { fare, payment_id, orderId, order, rideId, captainId } = req.body;
     console.log("order: " + orderId);
     await producerTemplate_default("payment-done", { fare, payment_id, orderId, order, userId, rideId, captainId });
+    await producerTemplate_default("payment-processed-notify-captain", { fare, payment_id, orderId, order, userId, rideId, captainId });
     res.status(200).json({
       message: "payment processed!"
     });
@@ -531,7 +534,7 @@ router2.post("/ride-request", userAuth_default, rideRequest_default);
 router2.post("/cancel-ride", userAuth_default, rideCancellation_default);
 router2.post("/confirm-ride", userAuth_default, confirmRide_default);
 router2.post("/captain-not-assigned", userAuth_default, captainNotAssigned_default);
-router2.post("/payment", payment_default);
+router2.post("/payment", userAuth_default, payment_default);
 var rideRoutes_default = router2;
 
 // src/kafka/consumerInIt.ts
@@ -743,7 +746,7 @@ var kafka_default = startKafka;
 // src/utils/bulkUpdate.ts
 import _ from "lodash";
 
-// src/utils/bulInsertDB.ts
+// src/utils/bulknsertDB.ts
 async function bulkInsertDB(chunks) {
   for (const chunk of chunks) {
     const ids = chunk.map(([userId, coordinates]) => `'${userId}'`).join(", ");
@@ -759,7 +762,7 @@ async function bulkInsertDB(chunks) {
     await database_default.$executeRawUnsafe(query);
   }
 }
-var bulInsertDB_default = bulkInsertDB;
+var bulknsertDB_default = bulkInsertDB;
 
 // src/utils/bulkUpdate.ts
 async function bulkUpdate() {
@@ -770,7 +773,7 @@ async function bulkUpdate() {
       if (buffer.length === 0) return;
       const chunks = _.chunk(buffer, 10);
       try {
-        await bulInsertDB_default(chunks);
+        await bulknsertDB_default(chunks);
         userLocationMap_default.clear();
       } catch (error) {
         throw new Error("Error in bulk inserting database: " + error.message);

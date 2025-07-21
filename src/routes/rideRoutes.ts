@@ -12,6 +12,6 @@ router.post("/ride-request", authenticate, handleRideRequest);
 router.post("/cancel-ride", authenticate, handleRideCancellation);
 router.post("/confirm-ride", authenticate, handleConfirmRide);
 router.post("/captain-not-assigned", authenticate, handleCaptainNotAssigned);
-router.post("/payment",  handlePaymentDone);
+router.post("/payment", authenticate, handlePaymentDone);
 
 export default router;

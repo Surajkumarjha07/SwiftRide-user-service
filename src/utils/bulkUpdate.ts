@@ -1,6 +1,6 @@
 import _ from "lodash";
 import userLocationMap from "../userLocationMap.js";
-import bulkInsertDB from "./bulInsertDB.js";
+import bulkInsertDB from "./bulknsertDB.js";
 
 async function bulkUpdate() {
     try {

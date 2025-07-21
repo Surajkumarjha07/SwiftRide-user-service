@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import UserPayload from "../../types/userPayloads.js";
 import { rideService } from "../../services/rideServices/index.js";
-import redis from "../../config/redis.js";
 
 async function handleCaptainNotAssigned(req: Request, res: Response): Promise<any> {
     try {

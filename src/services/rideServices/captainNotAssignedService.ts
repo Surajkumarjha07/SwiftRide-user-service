@@ -7,6 +7,7 @@ async function captainNotAssignedService(userId: string): Promise<boolean> {
         const { rideId } = rideData;
 
         if (!Object.keys(rideData).includes("captainId")) {
+            await sendProducerMessage("no-captain-assigned", { rideData });
             await redis.del(`rideData:${userId}`);
             await redis.del(`ride:${rideId}`);
 
