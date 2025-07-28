@@ -5,7 +5,10 @@ async function sendProducerMessage(topic: string, value: {}) {
         await producer.send({
             topic,
             messages: [{ value: JSON.stringify(value) }]
-        })
+        });
+
+        console.log(`${topic} sent`);
+
     } catch (error) {
         console.log(`error in sending ${topic}: ${error}`);
     }

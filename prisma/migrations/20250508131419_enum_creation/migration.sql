@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE `users` ADD COLUMN `in_ride` ENUM('IN_RIDE', 'NOT_IN_RIDE') NOT NULL DEFAULT 'NOT_IN_RIDE';
