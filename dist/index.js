@@ -3,7 +3,7 @@ import express2 from "express";
 import dotenv3 from "dotenv";
 import cookieParser from "cookie-parser";
 
-// src/routes/userRoutes.ts
+// src/routes/actions.routes.ts
 import express from "express";
 
 // src/config/database.ts
@@ -11,7 +11,7 @@ import { PrismaClient } from "@prisma/client";
 var prisma = new PrismaClient();
 var database_default = prisma;
 
-// src/services/userServices/deleteUserService.ts
+// src/services/actions.services/deleteUser.service.ts
 import bcrypt from "bcrypt";
 async function deleteUser({ userEmail, password }) {
   try {
@@ -30,14 +30,13 @@ async function deleteUser({ userEmail, password }) {
     return deletedUser;
   } catch (error) {
     if (error instanceof Error) {
-      console.log("Delete service error: ", error.message);
       throw error;
     }
   }
 }
-var deleteUserService_default = deleteUser;
+var deleteUser_service_default = deleteUser;
 
-// src/services/userServices/logInUserService.ts
+// src/services/actions.services/logInUser.service.ts
 import bcrypt2 from "bcrypt";
 import jwt from "jsonwebtoken";
 async function logInUser({ email, password }) {
@@ -50,7 +49,16 @@ async function logInUser({ email, password }) {
     if (!user || !passwordMatched) {
       throw new Error("Incorrect email or password!");
     }
-    const token = jwt.sign({ userEmail: email, userName: user.name, userId: user.userId, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign(
+      {
+        userId: user.userId,
+        userEmail: email,
+        userName: user.name,
+        role: user.role
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
     return token;
   } catch (error) {
     if (error instanceof Error) {
@@ -59,9 +67,9 @@ async function logInUser({ email, password }) {
     }
   }
 }
-var logInUserService_default = logInUser;
+var logInUser_service_default = logInUser;
 
-// src/services/userServices/signUpUserService.ts
+// src/services/actions.services/signUpUser.service.ts
 import bcrypt3 from "bcrypt";
 import dotenv from "dotenv";
 dotenv.config();
@@ -89,9 +97,9 @@ async function signUpUser({ email, name, password, role }) {
     }
   }
 }
-var signUpUserService_default = signUpUser;
+var signUpUser_service_default = signUpUser;
 
-// src/services/userServices/updateUserService.ts
+// src/services/actions.services/updateUser.service.ts
 import bcrypt4 from "bcrypt";
 async function updateUser({ newEmail, newName, newPassword, oldPassword, userEmail }) {
   try {
@@ -129,12 +137,12 @@ async function updateUser({ newEmail, newName, newPassword, oldPassword, userEma
     }
   }
 }
-var updateUserService_default = updateUser;
+var updateUser_service_default = updateUser;
 
-// src/services/userServices/index.ts
-var userService = { signUpUser: signUpUserService_default, logInUser: logInUserService_default, updateUser: updateUserService_default, deleteUser: deleteUserService_default };
+// src/services/actions.services/index.service.ts
+var userService = { signUpUser: signUpUser_service_default, logInUser: logInUser_service_default, updateUser: updateUser_service_default, deleteUser: deleteUser_service_default };
 
-// src/controllers/users/signUp.ts
+// src/controllers/actions.controllers/signUp.controller.ts
 async function handleSignUp(req, res) {
   const { email, name, password, role } = req.body;
   if (!email || !name || !password || !role) {
@@ -158,9 +166,9 @@ async function handleSignUp(req, res) {
     }
   }
 }
-var signUp_default = handleSignUp;
+var signUp_controller_default = handleSignUp;
 
-// src/controllers/users/logIn.ts
+// src/controllers/actions.controllers/logIn.controller.ts
 async function handleLogIn(req, res) {
   try {
     const { email, password } = req.body;
@@ -191,9 +199,9 @@ async function handleLogIn(req, res) {
     }
   }
 }
-var logIn_default = handleLogIn;
+var logIn_controller_default = handleLogIn;
 
-// src/controllers/users/update.ts
+// src/controllers/actions.controllers/update.controller.ts
 async function handleUpdateUserInfo(req, res) {
   try {
     const { newEmail, newName, newPassword, oldPassword } = req.body;
@@ -222,9 +230,9 @@ async function handleUpdateUserInfo(req, res) {
     }
   }
 }
-var update_default = handleUpdateUserInfo;
+var update_controller_default = handleUpdateUserInfo;
 
-// src/middlewares/userAuth.ts
+// src/middlewares/userAuth.middleware.ts
 import jwt2 from "jsonwebtoken";
 import dotenv2 from "dotenv";
 dotenv2.config();
@@ -243,13 +251,19 @@ async function authenticate(req, res, next) {
     return res.status(403).json({ message: "Forbidden: Invalid or expired token" });
   }
 }
-var userAuth_default = authenticate;
+var userAuth_middleware_default = authenticate;
 
-// src/controllers/users/delete.ts
+// src/controllers/actions.controllers/delete.controller.ts
 async function handleDeleteUser(req, res) {
   try {
     const { password } = req.body;
     const { userEmail } = req.user;
+    if (!password || !userEmail) {
+      res.status(400).json({
+        message: "Enter all credentials!"
+      });
+      return;
+    }
     const deletedUser = await userService.deleteUser({ userEmail, password });
     res.status(200).json({
       message: "User deleted!",
@@ -257,16 +271,16 @@ async function handleDeleteUser(req, res) {
     });
   } catch (error) {
     if (error instanceof Error) {
-      res.status(400).json({
+      res.status(500).json({
         message: error.message || "Internal server error!"
       });
       return;
     }
   }
 }
-var delete_default = handleDeleteUser;
+var delete_controller_default = handleDeleteUser;
 
-// src/controllers/users/logout.ts
+// src/controllers/actions.controllers/logout.controller.ts
 async function handleLogOut(req, res) {
   try {
     return res.clearCookie("authToken", {
@@ -286,41 +300,24 @@ async function handleLogOut(req, res) {
     }
   }
 }
-var logout_default = handleLogOut;
+var logout_controller_default = handleLogOut;
 
-// src/routes/userRoutes.ts
+// src/routes/actions.routes.ts
 var router = express.Router();
-router.post("/sign-up", signUp_default);
-router.post("/log-in", logIn_default);
-router.put("/update-user", userAuth_default, update_default);
-router.delete("/delete-user", userAuth_default, delete_default);
-router.post("/logout", logout_default);
-var userRoutes_default = router;
+router.post("/sign-up", signUp_controller_default);
+router.post("/log-in", logIn_controller_default);
+router.put("/update-user", userAuth_middleware_default, update_controller_default);
+router.delete("/delete-user", userAuth_middleware_default, delete_controller_default);
+router.post("/logout", logout_controller_default);
+var actions_routes_default = router;
 
-// src/routes/rideRoutes.ts
+// src/routes/rides.routes.ts
 import { Router } from "express";
 
 // src/config/redis.ts
 import { Redis } from "ioredis";
 var redis = new Redis();
 var redis_default = redis;
-
-// src/services/rideServices/captainNotAssignedService.ts
-async function captainNotAssignedService(userId) {
-  try {
-    const rideData = await redis_default.hgetall(`rideData:${userId}`);
-    const { rideId } = rideData;
-    if (!Object.keys(rideData).includes("captainId")) {
-      await redis_default.del(`rideData:${userId}`);
-      await redis_default.del(`ride:${rideId}`);
-      return false;
-    }
-    return true;
-  } catch (error) {
-    throw new Error("Error in captain-not-assigned service: " + error.message);
-  }
-}
-var captainNotAssignedService_default = captainNotAssignedService;
 
 // src/kafka/producerInIt.ts
 import { Partitioners } from "kafkajs";
@@ -362,7 +359,25 @@ async function sendProducerMessage(topic, value) {
 }
 var producerTemplate_default = sendProducerMessage;
 
-// src/services/rideServices/confirmRideService.ts
+// src/services/rides.services/captainNotAssigned.service.ts
+async function captainNotAssignedService(userId) {
+  try {
+    const rideData = await redis_default.hgetall(`rideData:${userId}`);
+    const { rideId } = rideData;
+    if (!Object.keys(rideData).includes("captainId")) {
+      await producerTemplate_default("no-captain-assigned", { rideData });
+      await redis_default.del(`rideData:${userId}`);
+      await redis_default.del(`ride:${rideId}`);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    throw new Error("Error in captain-not-assigned service: " + error.message);
+  }
+}
+var captainNotAssigned_service_default = captainNotAssignedService;
+
+// src/services/rides.services/confirmRide.service.ts
 async function confirmRide(userId, fare, vehicle) {
   try {
     const rideData = await redis_default.hgetall(`rideData:${userId}`);
@@ -376,9 +391,9 @@ async function confirmRide(userId, fare, vehicle) {
     }
   }
 }
-var confirmRideService_default = confirmRide;
+var confirmRide_service_default = confirmRide;
 
-// src/services/rideServices/rideCancelService.ts
+// src/services/rides.services/rideCancel.service.ts
 import { isInRide } from "@prisma/client";
 async function rideCancel(userId) {
   try {
@@ -397,9 +412,9 @@ async function rideCancel(userId) {
     }
   }
 }
-var rideCancelService_default = rideCancel;
+var rideCancel_service_default = rideCancel;
 
-// src/services/rideServices/rideRequestService.ts
+// src/services/rides.services/rideRequest.service.ts
 async function rideRequest({ userId, location, destination }) {
   try {
     await producerTemplate_default("calculate-fare", { userId, location, destination });
@@ -409,12 +424,12 @@ async function rideRequest({ userId, location, destination }) {
     }
   }
 }
-var rideRequestService_default = rideRequest;
+var rideRequest_service_default = rideRequest;
 
-// src/services/rideServices/index.ts
-var rideService = { rideRequest: rideRequestService_default, rideCancel: rideCancelService_default, confirmRide: confirmRideService_default, captainNotAssignedService: captainNotAssignedService_default };
+// src/services/rides.services/index.service.ts
+var rideService = { rideRequest: rideRequest_service_default, rideCancel: rideCancel_service_default, confirmRide: confirmRide_service_default, captainNotAssignedService: captainNotAssigned_service_default };
 
-// src/controllers/rides/rideRequest.ts
+// src/controllers/rides.controllers/rideRequest.controller.ts
 async function handleRideRequest(req, res) {
   try {
     const { location, destination } = req.body;
@@ -442,9 +457,9 @@ async function handleRideRequest(req, res) {
     });
   }
 }
-var rideRequest_default = handleRideRequest;
+var rideRequest_controller_default = handleRideRequest;
 
-// src/controllers/rides/rideCancellation.ts
+// src/controllers/rides.controllers/rideCancellation.controller.ts
 async function handleRideCancellation(req, res) {
   try {
     const { userId } = req.user;
@@ -465,9 +480,9 @@ async function handleRideCancellation(req, res) {
     });
   }
 }
-var rideCancellation_default = handleRideCancellation;
+var rideCancellation_controller_default = handleRideCancellation;
 
-// src/controllers/rides/confirmRide.ts
+// src/controllers/rides.controllers/confirmRide.controller.ts
 async function handleConfirmRide(req, res) {
   try {
     const { userId } = req.user;
@@ -484,14 +499,16 @@ async function handleConfirmRide(req, res) {
     });
   }
 }
-var confirmRide_default = handleConfirmRide;
+var confirmRide_controller_default = handleConfirmRide;
 
-// src/controllers/rides/payment.ts
+// src/controllers/rides.controllers/payment.controller.ts
 async function handlePaymentDone(req, res) {
   try {
-    const { fare, payment_id, orderId, order, userId, rideId, captainId } = req.body;
+    const { userId } = req.user;
+    const { fare, payment_id, orderId, order, rideId, captainId } = req.body;
     console.log("order: " + orderId);
     await producerTemplate_default("payment-done", { fare, payment_id, orderId, order, userId, rideId, captainId });
+    await producerTemplate_default("payment-processed-notify-captain", { fare, payment_id, orderId, order, userId, rideId, captainId });
     res.status(200).json({
       message: "payment processed!"
     });
@@ -502,9 +519,9 @@ async function handlePaymentDone(req, res) {
     });
   }
 }
-var payment_default = handlePaymentDone;
+var payment_controller_default = handlePaymentDone;
 
-// src/controllers/rides/captainNotAssigned.ts
+// src/controllers/rides.controllers/captainNotAssigned.controller.ts
 async function handleCaptainNotAssigned(req, res) {
   try {
     const { userId } = req.user;
@@ -523,16 +540,38 @@ async function handleCaptainNotAssigned(req, res) {
     });
   }
 }
-var captainNotAssigned_default = handleCaptainNotAssigned;
+var captainNotAssigned_controller_default = handleCaptainNotAssigned;
 
-// src/routes/rideRoutes.ts
+// src/controllers/rides.controllers/unConfirmedRide.controller.ts
+async function handleUnconfirmedRide(req, res) {
+  try {
+    const { userId } = req.user;
+    if (!userId) {
+      return res.status(400).json({
+        message: "Unauthorized Acsess!"
+      });
+    }
+    await redis_default.del(`rideData:${userId}`);
+    res.status(200).json({
+      message: "ride data cleaned up!"
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: error.message
+    });
+  }
+}
+var unConfirmedRide_controller_default = handleUnconfirmedRide;
+
+// src/routes/rides.routes.ts
 var router2 = Router();
-router2.post("/ride-request", userAuth_default, rideRequest_default);
-router2.post("/cancel-ride", userAuth_default, rideCancellation_default);
-router2.post("/confirm-ride", userAuth_default, confirmRide_default);
-router2.post("/captain-not-assigned", userAuth_default, captainNotAssigned_default);
-router2.post("/payment", payment_default);
-var rideRoutes_default = router2;
+router2.post("/ride-request", userAuth_middleware_default, rideRequest_controller_default);
+router2.post("/cancel-ride", userAuth_middleware_default, rideCancellation_controller_default);
+router2.post("/confirm-ride", userAuth_middleware_default, confirmRide_controller_default);
+router2.post("/captain-not-assigned", userAuth_middleware_default, captainNotAssigned_controller_default);
+router2.post("/payment", userAuth_middleware_default, payment_controller_default);
+router2.post("/process-unconfirmed-ride", userAuth_middleware_default, unConfirmedRide_controller_default);
+var rides_routes_default = router2;
 
 // src/kafka/consumerInIt.ts
 var ride_confirmed_consumer = kafkaClient_default.consumer({ groupId: "ride-confirmed-group" });
@@ -550,10 +589,10 @@ async function consumerInit() {
   ]);
 }
 
-// src/kafka/handlers/fareFetchedHandler.ts
+// src/kafka/handlers/fareFetched.handler.ts
 async function fareFetchedHandler({ message }) {
   try {
-    const { rideId, userId, pickUpLocation, destination, locationCoordinates, destinationCoordinates, fare } = JSON.parse(message.value.toString());
+    const { rideId, userId, pickUpLocation, destination, locationCoordinates, destinationCoordinates, fareDetails } = JSON.parse(message.value.toString());
     await redis_default.hset(`rideData:${userId}`, {
       rideId,
       userId,
@@ -564,22 +603,22 @@ async function fareFetchedHandler({ message }) {
       destination_latitude: destinationCoordinates.latitude,
       destination_longitude: destinationCoordinates.longitude
     });
-    console.log("fare: ", fare);
-    await producerTemplate_default("show-fare", { rideId, userId, pickUpLocation, destination, locationCoordinates, destinationCoordinates, fare });
+    console.log("fare: ", fareDetails);
+    await producerTemplate_default("show-fare", { rideId, userId, pickUpLocation, destination, locationCoordinates, destinationCoordinates, fareDetails });
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`Error in fare fetching handler: ${error.message}`);
     }
   }
 }
-var fareFetchedHandler_default = fareFetchedHandler;
+var fareFetched_handler_default = fareFetchedHandler;
 
-// src/kafka/consumers/fareFetched.ts
+// src/kafka/consumers/fareFetched.consumer.ts
 async function fareFetched() {
   try {
     await ride_fare_consumer.subscribe({ topic: "fare-fetched", fromBeginning: true });
     await ride_fare_consumer.run({
-      eachMessage: fareFetchedHandler_default
+      eachMessage: fareFetched_handler_default
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -587,9 +626,9 @@ async function fareFetched() {
     }
   }
 }
-var fareFetched_default = fareFetched;
+var fareFetched_consumer_default = fareFetched;
 
-// src/kafka/handlers/rideCompletedHandler.ts
+// src/kafka/handlers/rideCompleted.handler.ts
 import { isInRide as isInRide2 } from "@prisma/client";
 async function rideCompletedHandler({ message }) {
   const { userId, rideId, captainId } = JSON.parse(message.value.toString());
@@ -604,14 +643,14 @@ async function rideCompletedHandler({ message }) {
   console.log(`${captainId} completed ${rideId}`);
   await redis_default.del(`rideData:${userId}`);
 }
-var rideCompletedHandler_default = rideCompletedHandler;
+var rideCompleted_handler_default = rideCompletedHandler;
 
-// src/kafka/consumers/rideCompletedConsumer.ts
+// src/kafka/consumers/rideCompleted.consumer.ts
 async function rideCompleted() {
   try {
     await ride_completed_consumer.subscribe({ topic: "ride-completed-notify-user", fromBeginning: true });
     await ride_completed_consumer.run({
-      eachMessage: rideCompletedHandler_default
+      eachMessage: rideCompleted_handler_default
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -619,9 +658,9 @@ async function rideCompleted() {
     }
   }
 }
-var rideCompletedConsumer_default = rideCompleted;
+var rideCompleted_consumer_default = rideCompleted;
 
-// src/kafka/handlers/rideConfirmedHandler.ts
+// src/kafka/handlers/rideConfirmed.handler.ts
 import { isInRide as isInRide3 } from "@prisma/client";
 async function rideConfirmedHandler({ message }) {
   try {
@@ -646,14 +685,14 @@ async function rideConfirmedHandler({ message }) {
     }
   }
 }
-var rideConfirmedHandler_default = rideConfirmedHandler;
+var rideConfirmed_handler_default = rideConfirmedHandler;
 
-// src/kafka/consumers/rideConfirmedConsumer.ts
+// src/kafka/consumers/rideConfirmed.consumer.ts
 async function rideConfirmed() {
   try {
     await ride_confirmed_consumer.subscribe({ topic: "ride-confirmed", fromBeginning: true });
     await ride_confirmed_consumer.run({
-      eachMessage: rideConfirmedHandler_default
+      eachMessage: rideConfirmed_handler_default
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -661,13 +700,13 @@ async function rideConfirmed() {
     }
   }
 }
-var rideConfirmedConsumer_default = rideConfirmed;
+var rideConfirmed_consumer_default = rideConfirmed;
 
 // src/userLocationMap.ts
 var userLocationMap = /* @__PURE__ */ new Map();
 var userLocationMap_default = userLocationMap;
 
-// src/kafka/handlers/userLocationUpdateHandler.ts
+// src/kafka/handlers/userLocationUpdate.handler.ts
 async function userLocationUpdateHandler({ message }) {
   try {
     const { userId, coordinates } = JSON.parse(message.value.toString());
@@ -682,20 +721,20 @@ async function userLocationUpdateHandler({ message }) {
     throw new Error("Error in user-location-update handler: " + error.message);
   }
 }
-var userLocationUpdateHandler_default = userLocationUpdateHandler;
+var userLocationUpdate_handler_default = userLocationUpdateHandler;
 
-// src/kafka/consumers/userLocationUpdate.ts
+// src/kafka/consumers/locationUpdate.consumer.ts
 async function userLocationUpdate() {
   try {
     await user_location_update_consumer.subscribe({ topic: "user-location-update", fromBeginning: true });
     await user_location_update_consumer.run({
-      eachMessage: userLocationUpdateHandler_default
+      eachMessage: userLocationUpdate_handler_default
     });
   } catch (error) {
     throw new Error("Error in user-location-update consumer: " + error.message);
   }
 }
-var userLocationUpdate_default = userLocationUpdate;
+var locationUpdate_consumer_default = userLocationUpdate;
 
 // src/kafka/kafkaAdmin.ts
 async function kafkaInit() {
@@ -703,7 +742,7 @@ async function kafkaInit() {
   console.log("Admin connecting...");
   await admin.connect();
   console.log("Admin connected...");
-  const topics = ["ride-request"];
+  const topics = ["fare-fetched", "ride-completed-notify-user", "ride-confirmed", "user-location-update"];
   const existingTopics = await admin.listTopics();
   const topicsToCreate = topics.filter((t) => !existingTopics.includes(t));
   if (topicsToCreate.length > 0) {
@@ -716,7 +755,7 @@ async function kafkaInit() {
 }
 var kafkaAdmin_default = kafkaInit;
 
-// src/kafka/index.ts
+// src/kafka/index.kafka.ts
 async function startKafka() {
   (async () => {
     console.log("Initializing Kafka...");
@@ -733,17 +772,17 @@ async function startKafka() {
     await producerInit();
     console.log("Producer initialized.");
   })();
-  await rideConfirmedConsumer_default();
-  await fareFetched_default();
-  await rideCompletedConsumer_default();
-  await userLocationUpdate_default();
+  await rideConfirmed_consumer_default();
+  await fareFetched_consumer_default();
+  await rideCompleted_consumer_default();
+  await locationUpdate_consumer_default();
 }
-var kafka_default = startKafka;
+var index_kafka_default = startKafka;
 
 // src/utils/bulkUpdate.ts
 import _ from "lodash";
 
-// src/utils/bulInsertDB.ts
+// src/utils/bulknsertDB.ts
 async function bulkInsertDB(chunks) {
   for (const chunk of chunks) {
     const ids = chunk.map(([userId, coordinates]) => `'${userId}'`).join(", ");
@@ -759,7 +798,7 @@ async function bulkInsertDB(chunks) {
     await database_default.$executeRawUnsafe(query);
   }
 }
-var bulInsertDB_default = bulkInsertDB;
+var bulknsertDB_default = bulkInsertDB;
 
 // src/utils/bulkUpdate.ts
 async function bulkUpdate() {
@@ -770,7 +809,7 @@ async function bulkUpdate() {
       if (buffer.length === 0) return;
       const chunks = _.chunk(buffer, 10);
       try {
-        await bulInsertDB_default(chunks);
+        await bulknsertDB_default(chunks);
         userLocationMap_default.clear();
       } catch (error) {
         throw new Error("Error in bulk inserting database: " + error.message);
@@ -791,9 +830,9 @@ app.use(cookieParser());
 app.get("/", (req, res) => {
   res.send("Hello! Suraj, I am user-service");
 });
-app.use("/actions", userRoutes_default);
-app.use("/rides", rideRoutes_default);
-kafka_default();
+app.use("/actions", actions_routes_default);
+app.use("/rides", rides_routes_default);
+index_kafka_default();
 bulkUpdate_default();
 app.listen(Number(process.env.PORT), "0.0.0.0", () => {
   console.log("User service is running!");

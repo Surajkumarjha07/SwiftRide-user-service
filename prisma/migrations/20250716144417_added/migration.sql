@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE `users` ADD COLUMN `latitude` DOUBLE NOT NULL DEFAULT 0.00,
-    ADD COLUMN `longitude` DOUBLE NOT NULL DEFAULT 0.00;
