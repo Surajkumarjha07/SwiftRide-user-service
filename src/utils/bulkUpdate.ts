@@ -2,7 +2,7 @@ import _ from "lodash";
 import userLocationMap from "../userLocationMap.js";
 import bulkInsertDB from "./bulknsertDB.js";
 
-async function bulkUpdate() {
+async function bulkUpdateLocation() {
     try {
         let buffer: any[];
 
@@ -28,4 +28,4 @@ async function bulkUpdate() {
     }
 }
 
-export default bulkUpdate;
+export default bulkUpdateLocation;
