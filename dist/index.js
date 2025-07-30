@@ -801,7 +801,7 @@ async function bulkInsertDB(chunks) {
 var bulknsertDB_default = bulkInsertDB;
 
 // src/utils/bulkUpdate.ts
-async function bulkUpdate() {
+async function bulkUpdateLocation() {
   try {
     let buffer;
     setInterval(async () => {
@@ -819,7 +819,7 @@ async function bulkUpdate() {
     throw new Error("Error in bulk updating databse: " + error.message);
   }
 }
-var bulkUpdate_default = bulkUpdate;
+var bulkUpdate_default = bulkUpdateLocation;
 
 // src/index.ts
 dotenv3.config();
