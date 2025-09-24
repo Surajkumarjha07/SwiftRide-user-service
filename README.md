@@ -1,16 +1,14 @@
 👤 User Service
 
-The User Service is a backend module responsible for managing user information and creating ride requests.
+This User Service is an internal backend module of SwiftRide (Ride-Sharing Platform), which is responsible for managing user information and creating ride requests.  
 
 -----------------------------------------------------------------------------------------------------------------------------------------------
 
 🚀 Features
 
-✅ Profile Management (Create, Update, Delete)
-
-✅ User Authentication (JWT-based or OAuth)
-
-✅ API Endpoints for seamless integration
+✅ User Profile Management (Create, Update, Delete)  
+✅ User Authentication (JWT-based or OAuth)  
+✅ Ride request, cancellation, payment's request  
 
 -----------------------------------------------------------------------------------------------------------------------------------------------
 
