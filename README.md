@@ -16,15 +16,13 @@ The User Service is a backend module responsible for managing user information a
 
 🛠 Technologies Used
 
-⚛️ React Native
-
-🚀 Node.js
-
-⚡ Express
-
-🗄 MySQL
-
-🔄 Kafka
+✅ Node.js
+✅ Express
+✅ TypeScript
+✅ MySQL
+✅ Kafka
+✅ Redis
+✅ Prisma ORM
 
 -----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -43,6 +41,10 @@ dotenv
 prisma
 nodemon
 MySQL (Database)
+
+Ensure you have the following tools running in your local machine:
+Running Kafka in Docker
+Running Redis Instance in Docker
 
 -----------------------------------------------------------------------------------------------------------------------------------------------
 
