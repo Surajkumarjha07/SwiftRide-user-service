@@ -29,21 +29,21 @@ This User Service is an internal backend service of SwiftRide (Ride-Sharing Plat
 
 ✅ Prerequisites
 
-Ensure you have the following installed:  
+Ensure you have the following installed ->    
 Node.js (for JavaScript/TypeScript backend)  
 Express  
 
-Required Packages:  
+Required Packages ->  
 bcrypt  
 jsonwebtoken  
 dotenv  
 prisma  
 nodemon  
 
-Database:  
+Database ->  
 MySQL 
 
-Ensure you have the following tools running in your local machine:  
+Ensure you have the following tools running in your local machine ->  
 Confluent Kafka Docker Image
 Redis Docker Image
 
