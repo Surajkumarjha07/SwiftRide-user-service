@@ -17,11 +17,17 @@ The User Service is a backend module responsible for managing user information a
 🛠 Technologies Used
 
 ✅ Node.js
+
 ✅ Express
+
 ✅ TypeScript
+
 ✅ MySQL
+
 ✅ Kafka
+
 ✅ Redis
+
 ✅ Prisma ORM
 
 -----------------------------------------------------------------------------------------------------------------------------------------------
@@ -30,17 +36,19 @@ The User Service is a backend module responsible for managing user information a
 
 ✅ Prerequisites
 
-Ensure you have the following installed:
+Ensure you have the following installed:  
 
-Node.js (for JavaScript/TypeScript backend)
-Required Packages:
-express
-bcrypt
-jsonwebtoken
-dotenv
-prisma
-nodemon
-MySQL (Database)
+Node.js (for JavaScript/TypeScript backend)  
+
+Required Packages:  
+
+express  
+bcrypt  
+jsonwebtoken  
+dotenv  
+prisma  
+nodemon  
+MySQL (Database)  
 
 Ensure you have the following tools running in your local machine:
 Running Kafka in Docker
