@@ -25,9 +25,7 @@ This User Service is an internal backend service of SwiftRide (Ride-Sharing Plat
 
 -----------------------------------------------------------------------------------------------------------------------------------------------
 
-📦 Installation
-
-✅ Prerequisites
+📋 Prerequisites  
 
 Ensure you have the following installed ->    
 Node.js (for JavaScript/TypeScript backend)  
