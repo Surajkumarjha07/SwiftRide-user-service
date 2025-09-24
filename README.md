@@ -68,9 +68,9 @@ npm install
 3️⃣ Set Up Environment Variables
 Create a .env file and configure the following variables:
 
-DATABASE_URL=your-database-url
-PORT=your-port-number
-JWT_SECRET=your-jwt-secret
+DATABASE_URL=your-database-url  
+PORT=your-port-number  
+JWT_SECRET=your-jwt-secret  
 
 4️⃣ Run the Application
 
