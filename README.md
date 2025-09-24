@@ -19,6 +19,7 @@ This User Service is an internal backend service of SwiftRide (Ride-Sharing Plat
 ✅ TypeScript  
 ✅ MySQL  
 ✅ Kafka  
+✅ Docker  
 ✅ Redis  
 ✅ Prisma ORM  
 
