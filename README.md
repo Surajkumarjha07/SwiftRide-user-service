@@ -41,7 +41,7 @@ prisma
 nodemon  
 
 Database:  
-MySQL (Database)  
+MySQL 
 
 Ensure you have the following tools running in your local machine:  
 Confluent Kafka Docker Image
