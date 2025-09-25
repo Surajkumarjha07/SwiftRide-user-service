@@ -1,6 +1,6 @@
 👤 User Service
 
-This User Service is an internal backend service of SwiftRide (Ride-Sharing Platform), which is responsible for managing user information, creating ride requests, and other user related tasks.
+The User Service is an internal backend service of SwiftRide (Ride-Sharing Platform), which is responsible for managing user information, creating ride requests, and other user related tasks.
 
 -----------------------------------------------------------------------------------------------------------------------------------------------
 
