@@ -9,6 +9,7 @@ This User Service is an internal backend service of SwiftRide (Ride-Sharing Plat
 ✅ User Profile Management (Create, Update, Delete)  
 ✅ User Authentication (JWT-based or OAuth)  
 ✅ Ride request, cancellation, payment's request  
+✅ Updates user location to the database every minute, efficiently with bulk-insert
 
 -----------------------------------------------------------------------------------------------------------------------------------------------
 
