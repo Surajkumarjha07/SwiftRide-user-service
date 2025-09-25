@@ -64,6 +64,7 @@ git clone https://github.com/Surajkumarjha07/SwiftRide-user-service.git
 npm install
 
 3️⃣ Set Up Environment Variables
+
 Create a .env file and configure the following variables:
 
 DATABASE_URL=your-database-url  
