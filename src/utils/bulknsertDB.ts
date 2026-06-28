@@ -19,9 +19,9 @@ async function bulkInsertDB(chunks: Array<any>): Promise<any> {
         const query = `
             UPDATE users 
             SET
-            latitude = CASE userId ${latitudeCases} END,
-            longitude = CASE userId ${longitudeCases} END
-            WHERE userId IN (${ids});
+            latitude = CASE "userId" ${latitudeCases} END,
+            longitude = CASE "userId" ${longitudeCases} END
+            WHERE "userId" IN (${ids});
         `;
 
         await prisma.$executeRawUnsafe(query);

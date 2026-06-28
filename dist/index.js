@@ -316,7 +316,20 @@ import { Router } from "express";
 
 // src/config/redis.ts
 import { Redis } from "ioredis";
-var redis = new Redis();
+var REDIS_HOST = process.env.REDIS_HOST || "localhost";
+var REDIS_PORT = Number(process.env.REDIS_PORT) || 6379;
+var redis = new Redis({
+  host: REDIS_HOST,
+  port: REDIS_PORT
+});
+redis.on("connect", () => {
+  console.log(
+    `Redis connected: ${REDIS_HOST}:${REDIS_PORT}`
+  );
+});
+redis.on("error", (err) => {
+  console.error("Redis Error:", err);
+});
 var redis_default = redis;
 
 // src/kafka/producerInIt.ts
@@ -326,7 +339,7 @@ import { Partitioners } from "kafkajs";
 import { Kafka, logLevel } from "kafkajs";
 var kafka = new Kafka({
   clientId: "user-service",
-  brokers: ["localhost:9092"],
+  brokers: [process.env.KAFKA_BROKER || "localhost:9092"],
   connectionTimeout: 1e4,
   requestTimeout: 3e4,
   retry: {
@@ -791,9 +804,9 @@ async function bulkInsertDB(chunks) {
     const query = `
             UPDATE users 
             SET
-            latitude = CASE userId ${latitudeCases} END,
-            longitude = CASE userId ${longitudeCases} END
-            WHERE userId IN (${ids});
+            latitude = CASE "userId" ${latitudeCases} END,
+            longitude = CASE "userId" ${longitudeCases} END
+            WHERE "userId" IN (${ids});
         `;
     await database_default.$executeRawUnsafe(query);
   }
