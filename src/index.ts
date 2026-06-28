@@ -22,8 +22,8 @@ app.get("/", (req: Request, res: Response) => {
 app.use("/actions", userRoutes);
 app.use("/rides", rideRoutes);
 
-// kafka handling
-startKafka();
+// kafka setup
+await startKafka();
 
 // timely updates the location in the database
 bulkUpdateLocation();
