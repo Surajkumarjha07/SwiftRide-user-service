@@ -13,7 +13,7 @@ async function authenticate(req: Request, res: Response, next: NextFunction): Pr
     }
 
     try {
-        const verified = jwt.verify(token, process.env.JWT_SECRET!);
+        const verified = jwt.verify(token, process.env.USER_JWT_SECRET!);
         if (verified) {
             req.user = verified as UserPayload;
             next();
