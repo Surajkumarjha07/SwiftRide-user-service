@@ -22,7 +22,7 @@ async function logInUser({ email, password }: logInType) {
             userName: user.name,
             role: user.role
         },
-            process.env.JWT_SECRET!,
+            process.env.USER_JWT_SECRET!,
             { expiresIn: "1h" }
         );
 

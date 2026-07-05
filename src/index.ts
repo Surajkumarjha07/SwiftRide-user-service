@@ -28,6 +28,6 @@ await startKafka();
 // timely updates the location in the database
 bulkUpdateLocation();
 
-app.listen(Number(process.env.PORT), "0.0.0.0", () => {
+app.listen(Number(process.env.USER_SERVICE_PORT), "0.0.0.0", () => {
     console.log("User service is running!");
 })
