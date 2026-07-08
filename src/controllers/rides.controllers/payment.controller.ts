@@ -6,9 +6,6 @@ async function handlePaymentDone(req: Request, res: Response) {
     try {
         const { userId } = req.user as UserPayload;
         const { fare, payment_id, orderId, order, rideId, captainId } = req.body;
-        console.log("orderId: " + orderId);
-
-        console.log("ORDER:::: ", order);
 
         // will be consumed by payments service
         await sendProducerMessage("payment-done", { fare, payment_id, orderId, order, userId, rideId, captainId });
